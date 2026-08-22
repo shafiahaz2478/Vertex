@@ -23,10 +23,27 @@ function App() {
     const [destination, setDestination] = useState(null);
     const [routes, setRoutes] = useState([]);
     const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
-    const [userLoc, setUserLoc] = useState([77.5946, 12.9716]); // Default Bangalore
+    const [userLoc, setUserLoc] = useState([77.5946, 12.9716]); // Fallback Bangalore
     const [navigationActive, setNavigationActive] = useState(false);
 
     const mapRef = useRef(null);
+
+    // Auto-detect and sync live location on initial startup
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const liveCoords = [pos.coords.longitude, pos.coords.latitude];
+                    setUserLoc(liveCoords);
+                    mapRef.current?.setUserLocation(liveCoords[0], liveCoords[1]);
+                },
+                (err) => {
+                    console.info('Live location prompt dismissed/offline; using fallback:', err.message);
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+            );
+        }
+    }, []);
 
     // Simulate Proximity Alert system
     useEffect(() => {
@@ -41,14 +58,14 @@ function App() {
                 setProximityAlert(result);
                 setTimeout(() => setProximityAlert(null), 5000);
             }
-        }, 10000);
+        }, 12000);
 
         return () => clearInterval(alertInterval);
     }, [userLoc]);
 
-    // Effect for State A: No Destination -> Load nearby segments
+    // Effect for State A: Strictly load backend road condition segments for initial map view
     useEffect(() => {
-        if (!destination) {
+        if (!destination && !navigationActive) {
             const loadNearby = async () => {
                 const segments = await api.fetchNearbySegments(userLoc[1], userLoc[0], 500);
                 if (mapRef.current) {
@@ -57,13 +74,14 @@ function App() {
             };
             loadNearby();
         }
-    }, [destination, userLoc]);
+    }, [destination, userLoc, navigationActive]);
 
-    // Effect for State B: Destination Selected -> Load routes
+    // Effect for State B: Destination Selected -> Load routes with exact coordinates
     useEffect(() => {
-        if (destination) {
+        if (destination && !navigationActive) {
+            setSelectedHazard(null); // Clear hazard card to prevent overlapping
             const loadRoutes = async () => {
-                const fetchedRoutes = await api.fetchRoutes(destination.id, userLoc);
+                const fetchedRoutes = await api.fetchRoutes(destination.id, userLoc, destination.coordinates);
                 setRoutes(fetchedRoutes);
                 setSelectedRouteIndex(0);
                 if (mapRef.current && fetchedRoutes.length > 0) {
@@ -76,12 +94,13 @@ function App() {
 
     // Effect for updating selected route highlight
     useEffect(() => {
-        if (destination && routes.length > 0 && mapRef.current) {
+        if (destination && !navigationActive && routes.length > 0 && mapRef.current) {
             mapRef.current.showRoutes(routes, selectedRouteIndex, destination.coordinates);
         }
     }, [selectedRouteIndex]);
 
     const handleDestinationSelect = (dest) => {
+        setSelectedHazard(null);
         setNavigationActive(false);
         mapRef.current?.stopNavigation();
         setDestination(dest);
@@ -92,6 +111,7 @@ function App() {
         mapRef.current?.stopNavigation();
         setDestination(null);
         setRoutes([]);
+        setSelectedHazard(null);
         if (mapRef.current) {
             mapRef.current.clearRoutes();
         }
@@ -101,16 +121,21 @@ function App() {
         setUserLoc(coords);
     };
 
+    const handleRouteClickOnMap = (routeIndex) => {
+        if (typeof routeIndex === 'number' && routeIndex >= 0 && routeIndex < routes.length) {
+            setSelectedRouteIndex(routeIndex);
+        }
+    };
+
     const handleStartNavigation = async () => {
         if (!destination || !mapRef.current) return;
+        setSelectedHazard(null);
         const currentLocation = await mapRef.current.startNavigation();
         setUserLoc(currentLocation);
-        const refreshedRoutes = await api.fetchRoutes(destination.id, currentLocation);
-        if (refreshedRoutes.length > 0) {
-            setRoutes(refreshedRoutes);
-            setSelectedRouteIndex(0);
-            mapRef.current.showRoutes(refreshedRoutes, 0, destination.coordinates);
-            mapRef.current.enterNavigationMode(refreshedRoutes[0]);
+        
+        const activeRoute = routes[selectedRouteIndex] || routes[0];
+        if (activeRoute) {
+            mapRef.current.enterNavigationMode(activeRoute);
         }
         setNavigationActive(true);
     };
@@ -118,18 +143,38 @@ function App() {
     const handleStopNavigation = () => {
         mapRef.current?.stopNavigation();
         setNavigationActive(false);
+        if (destination && routes.length > 0 && mapRef.current) {
+            mapRef.current.showRoutes(routes, selectedRouteIndex, destination.coordinates);
+        }
+    };
+
+    const handleSegmentClick = (segmentProps) => {
+        setSelectedHazard({
+            road_name: segmentProps.name,
+            severity: segmentProps.conditionLevel === 'HIGH_RISK' || segmentProps.conditionLevel === 'POOR' ? 'HIGH' : segmentProps.conditionLevel === 'MODERATE' ? 'MEDIUM' : 'LOW',
+            lane: segmentProps.lane_advice?.includes('Left') ? 'Left Lane Hazard' : segmentProps.lane_advice?.includes('Right') ? 'Right Lane Hazard' : 'All Lanes Good',
+            potholes_per_km: segmentProps.potholes_per_km,
+            lane_advice: segmentProps.lane_advice,
+            confidence: 0.92,
+            verified_count: segmentProps.potholeCount || 1,
+            status: 'Verified',
+            detected_at: new Date().toISOString()
+        });
     };
 
     return html`
         <${MapComponent} 
             ref=${mapRef} 
-            onHazardClick=${(hazard) => setSelectedHazard(hazard)} 
+            onHazardClick=${(hazard) => setSelectedHazard(hazard)}
+            onSegmentClick=${handleSegmentClick}
+            onRouteClick=${handleRouteClickOnMap}
             onUserLocationChange=${handleUserLocationChange}
         />
         
         <div className="ui-layer">
             ${!navigationActive && html`
                 <${SearchBox}
+                    userCoords=${userLoc}
                     onDestinationSelect=${handleDestinationSelect}
                     onDestinationClear=${handleDestinationClear}
                 />
@@ -137,15 +182,17 @@ function App() {
             `}
             
             ${proximityAlert && html`
-                <div className="absolute top-20 left-1/2 transform -translate-x-1/2 pointer-events-none z-50 transition-all duration-300">
-                    <div className="bg-red-500 text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-3 font-bold">
-                        <${AlertCircle} size=${24} />
+                <div className="absolute top-24 left-1/2 transform -translate-x-1/2 pointer-events-none z-50 transition-all duration-300">
+                    <div className="bg-red-500/95 backdrop-blur-md text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 font-bold border border-white/20 text-sm animate-bounce">
+                        <${AlertCircle} size=${22} />
                         ${proximityAlert.message}
                     </div>
                 </div>
             `}
 
-            <${HazardPanel} hazard=${selectedHazard} onClose=${() => setSelectedHazard(null)} />
+            ${!destination && !navigationActive && html`
+                <${HazardPanel} hazard=${selectedHazard} onClose=${() => setSelectedHazard(null)} />
+            `}
             
             ${destination && html`
                 <${RoutePanel} 
@@ -155,6 +202,7 @@ function App() {
                     navigationActive=${navigationActive}
                     onStartNavigation=${handleStartNavigation}
                     onStopNavigation=${handleStopNavigation}
+                    onClose=${handleDestinationClear}
                 />
             `}
 
