@@ -158,12 +158,13 @@ export const api = {
       const query = bbox ? `?${new URLSearchParams({ bbox })}` : '';
       const response = await requestBackend(`/potholes${query}`);
       
-      // Inject has_image into the first few potholes for UI testing
+      // Inject has_image predictably for UI testing (20% of potholes)
       if (response && response.features && response.features.length > 0) {
-          response.features.forEach((feat, i) => {
-              if (i < 2) {
-                  if (!feat.properties) feat.properties = {};
-                  feat.properties.has_image = true;
+          response.features.forEach((feat) => {
+              if (feat.properties && typeof feat.properties.id === 'number') {
+                  feat.properties.has_image = (feat.properties.id % 5 === 0);
+              } else if (feat.properties) {
+                  feat.properties.has_image = false;
               }
           });
       }
