@@ -446,18 +446,21 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
                 const potholeData = await api.fetchPotholes(bbox);
                 
                 if (isOnRouteRef.current && activeRouteRef.current) {
-                    const routePotholes = [];
+                    const routeCoords = [];
                     activeRouteRef.current.segments.forEach(seg => {
-                        if (seg.potholes) {
-                            seg.potholes.forEach((coord, idx) => {
-                                routePotholes.push({
-                                    type: 'Feature',
-                                    geometry: { type: 'Point', coordinates: coord },
-                                    properties: { id: `route-pt-${idx}`, confidence: 0.9, severity: 'MEDIUM' }
-                                });
-                            });
-                        }
+                        routeCoords.push(...(seg.coordinates || []));
                     });
+                    
+                    const routePotholes = (potholeData.features || []).filter(pothole => {
+                        const pt = pothole.geometry.coordinates;
+                        for (let i = 0; i < routeCoords.length; i++) {
+                            if (distanceMeters(pt, routeCoords[i]) < 100) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+                    
                     map.current?.getSource('potholes-source')?.setData({ type: 'FeatureCollection', features: routePotholes });
                 } else {
                     map.current?.getSource('potholes-source')?.setData(potholeData);
