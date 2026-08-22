@@ -26,12 +26,12 @@ export function DashcamFlow({ onClose }) {
         
         const interval = setInterval(async () => {
             if (Math.random() > 0.8) {
-                // mock submitting a pothole nearby
-                await api.submitPothole({
+                // Queue device detections; the API flushes them in a 10-second batch.
+                await api.queuePotholeDetection({
                     latitude: 12.9716 + (Math.random() - 0.5) * 0.01,
                     longitude: 77.5946 + (Math.random() - 0.5) * 0.01,
                     confidence: 0.7 + Math.random() * 0.25,
-                    device_id: "dashcam_mock"
+                    detected_at: new Date().toISOString()
                 });
             }
         }, 3000);

@@ -14,12 +14,12 @@ export function PhoneCameraFlow({ onClose }) {
         
         const interval = setInterval(async () => {
             if (Math.random() > 0.7) {
-                // mock submitting a pothole nearby
-                await api.submitPothole({
+                // Queue device detections; the API flushes them in a 10-second batch.
+                await api.queuePotholeDetection({
                     latitude: 12.9716 + (Math.random() - 0.5) * 0.02,
                     longitude: 77.5946 + (Math.random() - 0.5) * 0.02,
                     confidence: 0.8 + Math.random() * 0.15,
-                    device_id: "phone_node_01"
+                    detected_at: new Date().toISOString()
                 });
                 setHazardsDetected(prev => prev + 1);
             }

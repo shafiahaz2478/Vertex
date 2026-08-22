@@ -110,6 +110,7 @@ function App() {
             setRoutes(refreshedRoutes);
             setSelectedRouteIndex(0);
             mapRef.current.showRoutes(refreshedRoutes, 0, destination.coordinates);
+            mapRef.current.enterNavigationMode(refreshedRoutes[0]);
         }
         setNavigationActive(true);
     };
@@ -127,11 +128,13 @@ function App() {
         />
         
         <div className="ui-layer">
-            <${SearchBox} 
-                onDestinationSelect=${handleDestinationSelect} 
-                onDestinationClear=${handleDestinationClear} 
-            />
-            <${MainMenu} onSelectMode=${(mode) => setActiveModal(mode)} />
+            ${!navigationActive && html`
+                <${SearchBox}
+                    onDestinationSelect=${handleDestinationSelect}
+                    onDestinationClear=${handleDestinationClear}
+                />
+                <${MainMenu} onSelectMode=${(mode) => setActiveModal(mode)} />
+            `}
             
             ${proximityAlert && html`
                 <div className="absolute top-20 left-1/2 transform -translate-x-1/2 pointer-events-none z-50 transition-all duration-300">

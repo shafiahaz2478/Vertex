@@ -10,6 +10,16 @@ const CONDITION_COLORS = {
     "HIGH_RISK": "#ef4444"   // Red
 };
 
+const bearingBetween = ([lng1, lat1], [lng2, lat2]) => {
+    const radians = Math.PI / 180;
+    const y = Math.sin((lng2 - lng1) * radians) * Math.cos(lat2 * radians);
+    const x = Math.cos(lat1 * radians) * Math.sin(lat2 * radians)
+        - Math.sin(lat1 * radians) * Math.cos(lat2 * radians) * Math.cos((lng2 - lng1) * radians);
+    return (Math.atan2(y, x) / radians + 360) % 360;
+};
+
+const routeCoordinates = (route) => (route?.segments || []).flatMap(segment => segment.coordinates || []);
+
 export const MapComponent = forwardRef(function MapComponent({ onHazardClick, onUserLocationChange }, ref) {
     const mapContainer = useRef(null);
     const map = useRef(null);
@@ -17,6 +27,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
     const userMarkerRef = useRef(null);
     const destMarkerRef = useRef(null);
     const locationWatchRef = useRef(null);
+    const navigationRef = useRef({ active: false, bearing: 0 });
 
     // Initial default location (Bangalore)
     const [currentLoc, setCurrentLoc] = useState([77.5946, 12.9716]);
@@ -48,6 +59,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
         if (routesSource) {
             routesSource.setData({ type: 'FeatureCollection', features: [] });
         }
+        map.current.getSource('navigation-route')?.setData({ type: 'FeatureCollection', features: [] });
 
         if (destMarkerRef.current) {
             destMarkerRef.current.remove();
@@ -130,12 +142,32 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
         showRoutes(routes, selectedIndex, destinationCoords) {
             applyRoutes(routes, selectedIndex, destinationCoords);
         },
+        enterNavigationMode(route) {
+            if (!map.current || !route) return;
+            const coordinates = routeCoordinates(route);
+            const routeBearing = coordinates.length > 1
+                ? bearingBetween(coordinates[0], coordinates[1])
+                : navigationRef.current.bearing;
+            navigationRef.current = { active: true, bearing: routeBearing };
+            updateUserMarker(currentLocRef.current[0], currentLocRef.current[1], routeBearing);
+            setNavigationRoute(coordinates);
+            enable3DBuildings();
+            map.current.easeTo({
+                center: currentLocRef.current,
+                zoom: Math.max(map.current.getZoom(), 17.2),
+                pitch: 62,
+                bearing: routeBearing,
+                duration: 1200,
+                essential: true
+            });
+        },
         clearRoutes() {
             if (map.current && isMapLoaded.current) {
                 const routesSource = map.current.getSource('routes-source');
                 if (routesSource) {
                     routesSource.setData({ type: 'FeatureCollection', features: [] });
                 }
+                map.current.getSource('navigation-route')?.setData({ type: 'FeatureCollection', features: [] });
             }
             if (destMarkerRef.current) {
                 destMarkerRef.current.remove();
@@ -160,7 +192,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
             return requestCurrentLocation().then((coords) => {
                 if (navigator.geolocation && locationWatchRef.current === null) {
                     locationWatchRef.current = navigator.geolocation.watchPosition(
-                        (pos) => updateLocation([pos.coords.longitude, pos.coords.latitude], true),
+                        (pos) => updateLocation([pos.coords.longitude, pos.coords.latitude], true, pos.coords.heading),
                         (err) => console.warn('Navigation location update failed:', err),
                         { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
                     );
@@ -173,29 +205,87 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
                 navigator.geolocation.clearWatch(locationWatchRef.current);
                 locationWatchRef.current = null;
             }
+            navigationRef.current.active = false;
+            updateUserMarker(currentLocRef.current[0], currentLocRef.current[1]);
+            if (map.current) {
+                map.current.getSource('navigation-route')?.setData({ type: 'FeatureCollection', features: [] });
+                map.current.easeTo({ pitch: 0, bearing: 0, duration: 700, essential: true });
+            }
         }
     }));
 
-    const updateUserMarker = (lng, lat) => {
+    const updateUserMarker = (lng, lat, bearing = navigationRef.current.bearing) => {
         if (!map.current) return;
         if (!userMarkerRef.current) {
             const el = document.createElement('div');
             el.className = 'user-location-marker';
-            el.innerHTML = '<div class="pulse"></div><div class="dot"></div>';
+            el.innerHTML = '<div class="pulse"></div><div class="dot"></div><div class="navigation-pointer"><svg viewBox="0 0 28 38" aria-hidden="true"><path d="M14 1 26 34 14 28 2 34Z" fill="#1a73e8" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"></path></svg></div>';
             userMarkerRef.current = new maplibregl.Marker({ element: el })
                 .setLngLat([lng, lat])
                 .addTo(map.current);
         } else {
             userMarkerRef.current.setLngLat([lng, lat]);
         }
+        const marker = userMarkerRef.current.getElement();
+        marker.classList.toggle('is-navigating', navigationRef.current.active);
+        marker.querySelector('.navigation-pointer').style.transform = `translate(-50%, -62%) rotate(${bearing}deg)`;
     };
 
-    const updateLocation = (coords, follow = false) => {
+    const setNavigationRoute = (coordinates) => {
+        map.current?.getSource('navigation-route')?.setData({
+            type: 'FeatureCollection',
+            features: coordinates.length > 1 ? [{
+                type: 'Feature',
+                geometry: { type: 'LineString', coordinates },
+                properties: {}
+            }] : []
+        });
+    };
+
+    const enable3DBuildings = () => {
+        if (!map.current || map.current.getLayer('navigation-buildings')) return;
+        try {
+            const vectorSource = Object.entries(map.current.getStyle().sources)
+                .find(([, source]) => source.type === 'vector')?.[0];
+            if (!vectorSource) return;
+            const labelLayer = map.current.getStyle().layers.find(layer => layer.type === 'symbol' && layer.layout?.['text-field'])?.id;
+            map.current.addLayer({
+                id: 'navigation-buildings',
+                type: 'fill-extrusion',
+                source: vectorSource,
+                'source-layer': 'building',
+                minzoom: 15,
+                paint: {
+                    'fill-extrusion-color': '#d8e2ef',
+                    'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8],
+                    'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0],
+                    'fill-extrusion-opacity': 0.82
+                }
+            }, labelLayer);
+        } catch (error) {
+            console.warn('3D buildings are not available in this basemap style.', error);
+        }
+    };
+
+    const updateLocation = (coords, follow = false, reportedHeading = null) => {
+        const previousCoords = currentLocRef.current;
+        const movementBearing = previousCoords[0] !== coords[0] || previousCoords[1] !== coords[1]
+            ? bearingBetween(previousCoords, coords)
+            : navigationRef.current.bearing;
+        const heading = Number.isFinite(reportedHeading) && reportedHeading >= 0 ? reportedHeading : movementBearing;
+        if (navigationRef.current.active) navigationRef.current.bearing = heading;
         currentLocRef.current = coords;
         setCurrentLoc(coords);
-        updateUserMarker(coords[0], coords[1]);
+        updateUserMarker(coords[0], coords[1], heading);
         if (map.current && follow) {
-            map.current.easeTo({ center: coords, zoom: Math.max(map.current.getZoom(), 16), duration: 700 });
+            map.current.easeTo({
+                center: coords,
+                zoom: Math.max(map.current.getZoom(), navigationRef.current.active ? 17.2 : 16),
+                pitch: navigationRef.current.active ? 62 : map.current.getPitch(),
+                bearing: navigationRef.current.active ? heading : map.current.getBearing(),
+                duration: 700,
+                essential: true
+            });
         }
         if (onUserLocationChange) onUserLocationChange(coords);
     };
@@ -238,6 +328,23 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
         map.current.on('error', (e) => {
             console.warn('MapLibre error:', e);
         });
+
+        const refreshViewportPotholes = async () => {
+            if (!map.current || !isMapLoaded.current) return;
+            const bounds = map.current.getBounds();
+            const bbox = [
+                bounds.getWest(),
+                bounds.getSouth(),
+                bounds.getEast(),
+                bounds.getNorth()
+            ].join(',');
+            try {
+                const potholeData = await api.fetchPotholes(bbox);
+                map.current?.getSource('potholes-source')?.setData(potholeData);
+            } catch (err) {
+                console.warn('Error fetching viewport potholes:', err);
+            }
+        };
 
         map.current.on('load', async () => {
             isMapLoaded.current = true;
@@ -317,6 +424,26 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
                 }
             });
 
+            // Dedicated navigation route: high-contrast blue with a white casing for the driving view.
+            map.current.addSource('navigation-route', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+            map.current.addLayer({
+                id: 'navigation-route-casing',
+                type: 'line',
+                source: 'navigation-route',
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#ffffff', 'line-width': 16, 'line-opacity': 0.96 }
+            });
+            map.current.addLayer({
+                id: 'navigation-route-line',
+                type: 'line',
+                source: 'navigation-route',
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#1a73e8', 'line-width': 10, 'line-opacity': 1 }
+            });
+
             // Add secondary pothole points layer
             map.current.addSource('potholes-source', {
                 type: 'geojson',
@@ -346,15 +473,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
             map.current.on('mouseenter', 'pothole-points', () => { map.current.getCanvas().style.cursor = 'pointer'; });
             map.current.on('mouseleave', 'pothole-points', () => { map.current.getCanvas().style.cursor = ''; });
 
-            // Fetch initial pothole points
-            try {
-                const potholeData = await api.fetchPotholes();
-                if (map.current.getSource('potholes-source')) {
-                    map.current.getSource('potholes-source').setData(potholeData);
-                }
-            } catch (err) {
-                console.warn("Error fetching initial potholes:", err);
-            }
+            await refreshViewportPotholes();
 
             // Apply any pending data
             if (pendingData.current.mode === 'routes' && pendingData.current.routes) {
@@ -376,7 +495,11 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
             }
         });
 
+        map.current.on('moveend', refreshViewportPotholes);
+        window.addEventListener('potholes:updated', refreshViewportPotholes);
+
         return () => {
+            window.removeEventListener('potholes:updated', refreshViewportPotholes);
             if (locationWatchRef.current !== null && navigator.geolocation) {
                 navigator.geolocation.clearWatch(locationWatchRef.current);
             }

@@ -1,8 +1,46 @@
 import { MOCK_POTHOLES, MOCK_ROAD_SEGMENTS, MOCK_DESTINATIONS, MOCK_ROUTES } from './mockData.js';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const API_BASE_URL = 'https://vertex-backend-hf09.onrender.com/api/v1';
 const OSRM_BASE_URL = 'https://router.project-osrm.org';
 const CONDITION_LEVELS = ['GOOD', 'MODERATE', 'POOR', 'HIGH_RISK'];
+let pendingDetections = [];
+let batchTimer = null;
+
+const notifyPotholesUpdated = () => window.dispatchEvent(new Event('potholes:updated'));
+
+async function requestBackend(path, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (options.body) headers['Content-Type'] = 'application/json';
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers,
+    ...options
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.detail || payload.message || `Backend request failed (${response.status})`);
+  }
+  return payload;
+}
+
+const asFallbackPothole = (data) => {
+  const newId = Math.max(...MOCK_POTHOLES.map(p => p.properties.id)) + 1;
+  const newPothole = {
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [data.longitude, data.latitude] },
+    properties: {
+      id: newId,
+      road_name: data.road_name || 'Detected Road',
+      confidence: data.confidence || 0.7,
+      severity: data.severity || 'MEDIUM',
+      verified_count: 1,
+      detected_at: data.detected_at || new Date().toISOString(),
+      status: 'Detected'
+    }
+  };
+  MOCK_POTHOLES.push(newPothole);
+  return { status: 'success', id: newId, road_name: newPothole.properties.road_name };
+};
 
 const asRoute = (route, index) => {
   const steps = route.legs?.flatMap(leg => leg.steps || []) || [];
@@ -22,9 +60,14 @@ const asRoute = (route, index) => {
     risk_level: index === 0 ? 'MODERATE' : 'LOW',
     segments: segments.length ? segments : [{ conditionLevel: 'MODERATE', coordinates: route.geometry.coordinates }],
     instructions: steps.map(step => ({
-      text: step.name ? `Continue on ${step.name}` : 'Continue on the current road',
+      text: step.maneuver?.type === 'turn'
+        ? `Turn ${step.maneuver?.modifier || 'ahead'}${step.name ? ` onto ${step.name}` : ''}`
+        : step.maneuver?.type === 'depart'
+          ? `Head ${step.maneuver?.modifier || 'straight'}${step.name ? ` on ${step.name}` : ''}`
+          : step.name ? `Continue on ${step.name}` : 'Continue on the current road',
       distance_m: Math.round(step.distance),
-      maneuver: step.maneuver?.type || 'continue'
+      maneuver: step.maneuver?.type || 'continue',
+      modifier: step.maneuver?.modifier || 'straight'
     }))
   };
 };
@@ -47,11 +90,14 @@ async function fetchRoadRoute(origin, destination, alternatives = false) {
 
 export const api = {
   async fetchPotholes(bbox) {
-    await delay(300);
-    return {
-      type: "FeatureCollection",
-      features: MOCK_POTHOLES
-    };
+    try {
+      const query = bbox ? `?${new URLSearchParams({ bbox })}` : '';
+      return await requestBackend(`/potholes${query}`);
+    } catch (error) {
+      console.warn('Could not load backend potholes; using demo data.', error);
+      await delay(300);
+      return { type: 'FeatureCollection', features: MOCK_POTHOLES };
+    }
   },
 
   async fetchNearbySegments(lat, lng, radiusM = 500) {
@@ -107,56 +153,77 @@ export const api = {
   },
 
   async submitPothole(data) {
-    await delay(500);
-    const newId = Math.max(...MOCK_POTHOLES.map(p => p.properties.id)) + 1;
-    const newPothole = {
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [data.longitude, data.latitude] },
-      properties: {
-        id: newId,
-        road_name: data.road_name || "Detected Road",
-        confidence: data.confidence || 0.85,
-        severity: data.severity || "MEDIUM",
-        verified_count: 1,
-        detected_at: new Date().toISOString(),
-        status: "Detected"
-      }
+    const payload = {
+      latitude: data.latitude,
+      longitude: data.longitude,
+      confidence: data.confidence
     };
-    MOCK_POTHOLES.push(newPothole);
-    return { status: "success", id: newId, road_name: newPothole.properties.road_name };
+    try {
+      const result = await requestBackend('/potholes', { method: 'POST', body: JSON.stringify(payload) });
+      notifyPotholesUpdated();
+      return result;
+    } catch (error) {
+      console.warn('Could not submit pothole to backend; storing demo record.', error);
+      const result = asFallbackPothole(data);
+      notifyPotholesUpdated();
+      return result;
+    }
+  },
+
+  async submitPotholeBatch(potholes) {
+    if (!potholes.length) return { status: 'success', inserted_count: 0 };
+    const result = await requestBackend('/potholes/batch', {
+      method: 'POST',
+      body: JSON.stringify({ potholes: potholes.map(({ latitude, longitude, confidence, detected_at }) => ({
+        latitude,
+        longitude,
+        confidence,
+        detected_at: detected_at || new Date().toISOString()
+      })) })
+    });
+    notifyPotholesUpdated();
+    return result;
+  },
+
+  queuePotholeDetection(data) {
+    pendingDetections.push({ ...data, detected_at: data.detected_at || new Date().toISOString() });
+    if (pendingDetections.length >= 20) return this.flushPotholeBatch();
+    if (!batchTimer) {
+      batchTimer = setTimeout(() => this.flushPotholeBatch(), 10000);
+    }
+    return Promise.resolve({ queued: true });
+  },
+
+  async flushPotholeBatch() {
+    if (batchTimer) clearTimeout(batchTimer);
+    batchTimer = null;
+    const batch = pendingDetections;
+    pendingDetections = [];
+    if (!batch.length) return { status: 'success', inserted_count: 0 };
+    try {
+      return await this.submitPotholeBatch(batch);
+    } catch (error) {
+      console.warn('Could not batch-submit potholes; keeping demo records.', error);
+      batch.forEach(asFallbackPothole);
+      notifyPotholesUpdated();
+      return { status: 'offline', inserted_count: 0 };
+    }
   },
 
   async checkProximity(data) {
-    await delay(200);
-    const isAlert = Math.random() > 0.8;
-    if (isAlert) {
-      return {
-        alert: true,
-        distance_meters: Math.floor(Math.random() * 50) + 10,
-        hazard_type: "pothole",
-        message: "Pothole detected ahead."
-      };
+    try {
+      return await requestBackend('/alerts/proximity', { method: 'POST', body: JSON.stringify(data) });
+    } catch (error) {
+      console.warn('Could not check backend proximity alert.', error);
+      return { alert: false };
     }
-    return { alert: false };
   },
 
   async reportHazard(data) {
-    await delay(600);
-    const newId = Math.max(...MOCK_POTHOLES.map(p => p.properties.id)) + 1;
-    const newPothole = {
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [data.longitude || 77.5946, data.latitude || 12.9716] },
-      properties: {
-        id: newId,
-        road_name: data.location || "Unknown Road",
-        confidence: 0.70,
-        severity: data.severity || "MEDIUM",
-        verified_count: 1,
-        detected_at: new Date().toISOString(),
-        status: "Detected"
-      }
-    };
-    MOCK_POTHOLES.push(newPothole);
-    return { status: "success", id: newId, road_name: newPothole.properties.road_name };
+    return this.submitPothole({ ...data, confidence: data.confidence || 0.7 });
+  },
+
+  async fetchRoadSummary() {
+    return requestBackend('/roads/summary');
   }
 };

@@ -1,6 +1,6 @@
 import React from 'react';
 import { html, classNames } from '../utils.js';
-import { Navigation, ShieldAlert } from 'lucide-react';
+import { Navigation, ShieldAlert, ArrowUp, CornerUpLeft, CornerUpRight, Flag, X } from 'lucide-react';
 
 export function RoutePanel({ routes, selectedIndex = 0, onSelectRoute, navigationActive, onStartNavigation, onStopNavigation }) {
     if (!routes || routes.length === 0) return null;
@@ -34,7 +34,51 @@ export function RoutePanel({ routes, selectedIndex = 0, onSelectRoute, navigatio
     };
 
     const activeRoute = routes[selectedIndex] || routes[0];
-    const nextInstruction = activeRoute?.instructions?.[0];
+    const nextInstruction = activeRoute?.instructions?.find(instruction => instruction.maneuver === 'turn' || instruction.maneuver === 'roundabout')
+        || activeRoute?.instructions?.[1]
+        || activeRoute?.instructions?.[0];
+    const turnIcon = nextInstruction?.modifier?.includes('left') ? CornerUpLeft
+        : nextInstruction?.modifier?.includes('right') ? CornerUpRight
+        : ArrowUp;
+    const distanceToTurn = nextInstruction?.distance_m >= 1000
+        ? `${(nextInstruction.distance_m / 1000).toFixed(1)} km`
+        : `${nextInstruction?.distance_m || 0} m`;
+
+    if (navigationActive) {
+        return html`
+            <div className="absolute inset-0 pointer-events-none z-40">
+                <div className="absolute top-4 left-1/2 w-11/12 max-w-md -translate-x-1/2 pointer-events-auto">
+                    <div className="overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+                        <div className="flex items-center gap-4 px-4 py-3.5">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#1a73e8] text-white shadow-sm">
+                                <${turnIcon} size=${34} strokeWidth=${2.8} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="text-2xl font-bold leading-none text-gray-900">${distanceToTurn}</div>
+                                <div className="mt-1 truncate text-sm font-semibold text-gray-700">${nextInstruction?.text || 'Continue on the highlighted route'}</div>
+                            </div>
+                            <button onClick=${onStopNavigation} aria-label="Stop navigation" className="rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800">
+                                <${X} size=${20} />
+                            </button>
+                        </div>
+                        <div className="border-t border-gray-100 bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500">
+                            Hazard warnings are active on this route
+                        </div>
+                    </div>
+                </div>
+
+                <div className="absolute bottom-5 left-1/2 w-11/12 max-w-md -translate-x-1/2 pointer-events-auto">
+                    <div className="flex items-center justify-between rounded-2xl bg-gray-900 px-4 py-3 text-white shadow-2xl">
+                        <div>
+                            <div className="text-lg font-bold leading-tight">${activeRoute.time_min} min <span className="text-sm font-medium text-gray-300">· ${activeRoute.distance_km} km</span></div>
+                            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-300"><${Flag} size=${12} /> ${activeRoute.name}</div>
+                        </div>
+                        <button onClick=${onStopNavigation} className="rounded-xl bg-white/15 px-3 py-2 text-xs font-bold transition-colors hover:bg-white/25">Exit</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
     return html`
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-md pointer-events-auto z-40 transition-all duration-300">

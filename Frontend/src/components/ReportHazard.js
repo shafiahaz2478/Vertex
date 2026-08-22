@@ -11,18 +11,38 @@ export function ReportHazard({ onClose }) {
     const [submitted, setSubmitted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [result, setResult] = useState(null);
+    const [error, setError] = useState('');
 
     const handleSubmit = async () => {
         if (!location.trim()) return;
         setSubmitting(true);
-        const res = await api.reportHazard({
-            location: location.trim(),
-            severity,
-            description
-        });
-        setResult(res);
-        setSubmitted(true);
-        setSubmitting(false);
+        setError('');
+        try {
+            const position = await new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Location is not supported by this browser.'));
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 5000
+                });
+            });
+            const res = await api.reportHazard({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                location: location.trim(),
+                severity,
+                description
+            });
+            setResult(res);
+            setSubmitted(true);
+        } catch (submitError) {
+            setError(submitError.message || 'Unable to submit this report. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return html`
@@ -104,6 +124,8 @@ export function ReportHazard({ onClose }) {
                             />
                         </div>
 
+                        ${error && html`<p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">${error}</p>`}
+
                         <button
                             onClick=${handleSubmit}
                             disabled=${!location.trim() || submitting}
@@ -113,7 +135,7 @@ export function ReportHazard({ onClose }) {
                             )}
                         >
                             <${Send} size=${16} />
-                            ${submitting ? "Submitting..." : "Submit Report"}
+                            ${submitting ? "Getting location..." : "Submit Report"}
                         </button>
                     </div>
                 `}
