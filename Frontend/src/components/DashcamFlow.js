@@ -26,13 +26,31 @@ export function DashcamFlow({ onClose }) {
         
         const interval = setInterval(async () => {
             if (Math.random() > 0.8) {
-                // Queue device detections; the API flushes them in a 10-second batch.
-                await api.queuePotholeDetection({
-                    latitude: 12.9716 + (Math.random() - 0.5) * 0.01,
-                    longitude: 77.5946 + (Math.random() - 0.5) * 0.01,
-                    confidence: 0.7 + Math.random() * 0.25,
-                    detected_at: new Date().toISOString()
-                });
+                const conf = 0.7 + Math.random() * 0.25;
+                const lat = 12.9716 + (Math.random() - 0.5) * 0.01;
+                const lon = 77.5946 + (Math.random() - 0.5) * 0.01;
+                
+                if (conf > 0.90) {
+                    const currentFrameBase64 = "data:image/jpeg;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+                    fetch("https://vertex-backend-hf09.onrender.com/api/v1/potholes", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            latitude: lat,
+                            longitude: lon,
+                            confidence: conf,
+                            image_base64: currentFrameBase64
+                        })
+                    }).catch(console.warn);
+                } else {
+                    // Queue device detections; the API flushes them in a 10-second batch.
+                    await api.queuePotholeDetection({
+                        latitude: lat,
+                        longitude: lon,
+                        confidence: conf,
+                        detected_at: new Date().toISOString()
+                    });
+                }
             }
         }, 3000);
 

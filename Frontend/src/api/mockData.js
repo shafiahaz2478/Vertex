@@ -9,8 +9,8 @@
 
 // Road hazards with approximate lane tracking
 export const MOCK_POTHOLES = [
-  { type: "Feature", geometry: { type: "Point", coordinates: [77.594697, 12.971848] }, properties: { id: 1, road_name: "Vittal Mallya Road", confidence: 0.88, severity: "HIGH", lane: "Left Lane", verified_count: 4, detected_at: "2026-08-22T06:10:00Z", status: "Reported" } },
-  { type: "Feature", geometry: { type: "Point", coordinates: [77.597964, 12.973816] }, properties: { id: 3, road_name: "MG Road area", confidence: 0.95, severity: "HIGH", lane: "Right Lane", verified_count: 12, detected_at: "2026-08-21T14:30:00Z", status: "Under Repair" } },
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.594697, 12.971848] }, properties: { id: 1, road_name: "Vittal Mallya Road", confidence: 0.88, severity: "HIGH", lane: "Left Lane", verified_count: 4, detected_at: "2026-08-22T06:10:00Z", status: "Reported", has_image: true } },
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.597964, 12.973816] }, properties: { id: 3, road_name: "MG Road area", confidence: 0.95, severity: "HIGH", lane: "Right Lane", verified_count: 12, detected_at: "2026-08-21T14:30:00Z", status: "Under Repair", has_image: true } },
   { type: "Feature", geometry: { type: "Point", coordinates: [77.590834, 12.969129] }, properties: { id: 5, road_name: "Richmond Road area", confidence: 0.76, severity: "MEDIUM", lane: "Center Lane", verified_count: 2, detected_at: "2026-08-22T08:15:00Z", status: "Detected" } },
   { type: "Feature", geometry: { type: "Point", coordinates: [77.602447, 12.969455] }, properties: { id: 8, road_name: "Residency Road", confidence: 0.91, severity: "HIGH", lane: "Left Lane", verified_count: 7, detected_at: "2026-08-20T11:00:00Z", status: "Verified" } },
   { type: "Feature", geometry: { type: "Point", coordinates: [77.614991, 12.955908] }, properties: { id: 11, road_name: "Inner Ring Road area", confidence: 0.97, severity: "HIGH", lane: "Left Lane", verified_count: 22, detected_at: "2026-08-10T08:00:00Z", status: "Under Repair" } },

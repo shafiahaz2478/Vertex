@@ -178,16 +178,45 @@ function App() {
         
         <div className="ui-layer">
             ${rightClickedHazard && html`
-                <div className="absolute top-6 right-6 z-50 pointer-events-auto">
+                <div className="absolute top-6 right-6 z-50 pointer-events-auto flex flex-col items-end gap-2">
+                    ${rightClickedHazard.has_image ? html`
+                        <button 
+                            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center gap-2 transition-all active:scale-95"
+                            onClick=${async () => {
+                                const hazardId = rightClickedHazard.id;
+                                const userEmail = prompt("Enter your registered Resend email address to report this hazard to the city:", "your_registered_email@gmail.com");
+                                if (userEmail) {
+                                    try {
+                                        const response = await fetch(`https://vertex-backend-hf09.onrender.com/api/v1/potholes/${hazardId}/report`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ target_email: userEmail })
+                                        });
+                                        if (response.ok) {
+                                            alert("Report successfully sent to city officials!");
+                                        } else {
+                                            alert("Failed to send report.");
+                                        }
+                                    } catch (e) {
+                                        alert("Error sending report.");
+                                    }
+                                }
+                                setRightClickedHazard(null);
+                            }}
+                        >
+                            <${AlertCircle} size=${18} />
+                            Report to City
+                        </button>
+                    ` : html`
+                        <div className="bg-gray-800 text-white py-2 px-4 rounded shadow-lg text-sm">
+                            Cannot report to city (No image available)
+                        </div>
+                    `}
                     <button 
-                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center gap-2 transition-all active:scale-95"
-                        onClick=${() => {
-                            setActiveModal('report');
-                            setRightClickedHazard(null);
-                        }}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded shadow text-xs mt-1"
+                        onClick=${() => setRightClickedHazard(null)}
                     >
-                        <${AlertCircle} size=${18} />
-                        Report Pothole
+                        Dismiss
                     </button>
                 </div>
             `}
