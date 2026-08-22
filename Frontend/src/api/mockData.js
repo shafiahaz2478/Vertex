@@ -58,8 +58,17 @@ export const MOCK_DESTINATIONS = [
   { id: "dest3", name: "Cubbon Park", coordinates: [77.5930, 12.9750] },
   { id: "dest4", name: "Whitefield", coordinates: [77.7490, 12.9690] },
   { id: "dest5", name: "HSR Layout", coordinates: [77.6410, 12.9120] },
-  { id: "dest6", name: "Electronic City", coordinates: [77.6760, 12.8390] },
-  { id: "dest7", name: "Jayanagar", coordinates: [77.5830, 12.9250] }
+  { id: "dest6", name: "Electronic City", coordinates: [77.6720, 12.8450] },
+  { id: "dest7", name: "Jayanagar", coordinates: [77.5830, 12.9250] },
+  { id: "dest8", name: "Mysuru", coordinates: [76.6499, 12.2958] },
+  { id: "dest9", name: "Kushalanagara", coordinates: [75.9583, 12.4578] },
+  { id: "dest10", name: "Madikeri", coordinates: [75.7402, 12.4244] },
+  { id: "dest11", name: "Periyapatna", coordinates: [76.1017, 12.3392] },
+  { id: "dest12", name: "Hunsur", coordinates: [76.2917, 12.3083] },
+  { id: "dest13", name: "Gundlupet", coordinates: [76.6896, 11.8080] },
+  { id: "dest14", name: "Gudalur", coordinates: [76.4950, 11.5039] },
+  { id: "dest15", name: "Udhagamandalam", coordinates: [76.6932, 11.4102] },
+  { id: "dest16", name: "Mandya", coordinates: [76.8951, 12.5218] }
 ];
 
 // Known locations for autocomplete and reports
@@ -68,7 +77,9 @@ export const KNOWN_LOCATIONS = [
   "Cubbon Park", "Bannerghatta Road", "Hosur Road", "Outer Ring Road",
   "Richmond Road", "Kasturba Road", "Residency Road", "Brigade Road",
   "Lavelle Road", "Sankey Road", "Electronic City", "HSR Layout",
-  "BTM Layout", "Marathahalli", "Hebbal"
+  "BTM Layout", "Marathahalli", "Hebbal", "Mysuru",
+  "Kushalanagara", "Madikeri", "Periyapatna", "Hunsur",
+  "Gundlupet", "Gudalur", "Udhagamandalam", "Mandya"
 ];
 
 // Routes for when destination is selected (State B)
@@ -201,6 +212,72 @@ export const MOCK_ROUTES = {
         { conditionLevel: "GOOD", coordinates: [[77.6200, 12.9650], [77.6350, 12.9300]] },
         { conditionLevel: "MODERATE", coordinates: [[77.6350, 12.9300], [77.6410, 12.9120]] }
       ]
+    }
+  ],
+  // Routes to Mysuru
+  "dest8": [
+    {
+      id: "route10",
+      name: "Via Bengaluru - Mysuru Expressway",
+      distance_km: 145.2,
+      time_min: 120,
+      condition_score: 95,
+      risk_level: "LOW",
+      segments: [
+        { 
+          conditionLevel: "HIGH_RISK", 
+          coordinates: [[77.5946, 12.9716], [77.5100, 12.8700], [77.4000, 12.7500], [76.9000, 12.5000], [76.6499, 12.2958]],
+          potholes: [[77.5100, 12.8700], [77.4000, 12.7500], [76.9000, 12.5000]]
+        }
+      ]
+    }
+  ],
+  "dest9": [
+    {
+      id: "route_kush", name: "Route to Kushalanagara", distance_km: 235.4, time_min: 240, condition_score: 75, risk_level: "MODERATE",
+      segments: [{ conditionLevel: "POOR", coordinates: [[77.5946, 12.9716], [76.6499, 12.2958], [75.9583, 12.4578]], potholes: [[76.6499, 12.2958]] }]
+    }
+  ],
+  "dest10": [
+    {
+      id: "route_madikeri", name: "Route to Madikeri", distance_km: 265.1, time_min: 275, condition_score: 65, risk_level: "HIGH",
+      segments: [{ conditionLevel: "HIGH_RISK", coordinates: [[77.5946, 12.9716], [76.6499, 12.2958], [75.9583, 12.4578], [75.7402, 12.4244]], potholes: [[75.9583, 12.4578], [75.8, 12.44]] }]
+    }
+  ],
+  "dest11": [
+    {
+      id: "route_periya", name: "Route to Periyapatna", distance_km: 210.3, time_min: 210, condition_score: 82, risk_level: "LOW",
+      segments: [{ conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [76.6499, 12.2958], [76.1017, 12.3392]] }]
+    }
+  ],
+  "dest12": [
+    {
+      id: "route_hunsur", name: "Route to Hunsur", distance_km: 190.5, time_min: 195, condition_score: 88, risk_level: "LOW",
+      segments: [{ conditionLevel: "MODERATE", coordinates: [[77.5946, 12.9716], [76.6499, 12.2958], [76.2917, 12.3083]], potholes: [[76.4, 12.3]] }]
+    }
+  ],
+  "dest13": [
+    {
+      id: "route_gundlupet", name: "Route to Gundlupet", distance_km: 205.8, time_min: 215, condition_score: 72, risk_level: "MODERATE",
+      segments: [{ conditionLevel: "POOR", coordinates: [[77.5946, 12.9716], [76.6499, 12.2958], [76.6896, 11.8080]], potholes: [[76.66, 12.0]] }]
+    }
+  ],
+  "dest14": [
+    {
+      id: "route_gudalur", name: "Route to Gudalur", distance_km: 255.4, time_min: 280, condition_score: 60, risk_level: "HIGH",
+      segments: [{ conditionLevel: "HIGH_RISK", coordinates: [[77.5946, 12.9716], [76.6499, 12.2958], [76.6896, 11.8080], [76.4950, 11.5039]], potholes: [[76.6, 11.6]] }]
+    }
+  ],
+  "dest15": [
+    {
+      id: "route_ooty", name: "Route to Udhagamandalam", distance_km: 285.2, time_min: 320, condition_score: 55, risk_level: "HIGH",
+      segments: [{ conditionLevel: "HIGH_RISK", coordinates: [[77.5946, 12.9716], [76.6499, 12.2958], [76.6896, 11.8080], [76.4950, 11.5039], [76.6932, 11.4102]], potholes: [[76.6, 11.45]] }]
+    }
+  ],
+  "dest16": [
+    {
+      id: "route_mandya", name: "Route to Mandya", distance_km: 98.5, time_min: 105, condition_score: 92, risk_level: "LOW",
+      segments: [{ conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [77.4000, 12.7500], [76.8951, 12.5218]] }]
     }
   ]
 };

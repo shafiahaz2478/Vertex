@@ -1,0 +1,349 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Pothole Detection Backend (Supabase)",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/v1/potholes/batch": {
+            "post": {
+                "summary": "Ingest Potholes Batch",
+                "description": "Batch ingest with deduplication against Supabase",
+                "operationId": "ingest_potholes_batch_api_v1_potholes_batch_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PotholeBatchRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/potholes": {
+            "post": {
+                "summary": "Ingest Single Pothole",
+                "description": "Single ingest endpoint fallback",
+                "operationId": "ingest_single_pothole_api_v1_potholes_post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SinglePotholeCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "Get Potholes Bbox",
+                "description": "GeoJSON bounding box query for map display",
+                "operationId": "get_potholes_bbox_api_v1_potholes_get",
+                "parameters": [
+                    {
+                        "name": "bbox",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "min_lon,min_lat,max_lon,max_lat",
+                            "title": "Bbox"
+                        },
+                        "description": "min_lon,min_lat,max_lon,max_lat"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/roads/summary": {
+            "get": {
+                "summary": "Get Roads Summary",
+                "description": "Summary of hazard density per road",
+                "operationId": "get_roads_summary_api_v1_roads_summary_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/alerts/proximity": {
+            "post": {
+                "summary": "Get Proximity Alert",
+                "description": "Driver proximity warning for potholes within 50m",
+                "operationId": "get_proximity_alert_api_v1_alerts_proximity_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProximityAlertRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "PotholeBatchRequest": {
+                "properties": {
+                    "potholes": {
+                        "items": {
+                            "$ref": "#/components/schemas/PotholeItem"
+                        },
+                        "type": "array",
+                        "title": "Potholes"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "potholes"
+                ],
+                "title": "PotholeBatchRequest"
+            },
+            "PotholeItem": {
+                "properties": {
+                    "latitude": {
+                        "type": "number",
+                        "title": "Latitude"
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "title": "Longitude"
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "title": "Confidence"
+                    },
+                    "detected_at": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Detected At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "latitude",
+                    "longitude",
+                    "confidence"
+                ],
+                "title": "PotholeItem"
+            },
+            "ProximityAlertRequest": {
+                "properties": {
+                    "latitude": {
+                        "type": "number",
+                        "title": "Latitude"
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "title": "Longitude"
+                    },
+                    "heading_degrees": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Heading Degrees",
+                        "default": 0.0
+                    },
+                    "speed_kmh": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Speed Kmh",
+                        "default": 30.0
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "latitude",
+                    "longitude"
+                ],
+                "title": "ProximityAlertRequest"
+            },
+            "SinglePotholeCreate": {
+                "properties": {
+                    "latitude": {
+                        "type": "number",
+                        "title": "Latitude"
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "title": "Longitude"
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Confidence"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "latitude",
+                    "longitude",
+                    "confidence"
+                ],
+                "title": "SinglePotholeCreate"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    },
+                    "input": {
+                        "title": "Input"
+                    },
+                    "ctx": {
+                        "type": "object",
+                        "title": "Context"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}

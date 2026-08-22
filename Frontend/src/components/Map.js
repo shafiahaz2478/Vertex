@@ -20,7 +20,7 @@ const bearingBetween = ([lng1, lat1], [lng2, lat2]) => {
 
 const routeCoordinates = (route) => (route?.segments || []).flatMap(segment => segment.coordinates || []);
 
-export const MapComponent = forwardRef(function MapComponent({ onHazardClick, onUserLocationChange }, ref) {
+export const MapComponent = forwardRef(function MapComponent({ onHazardClick, onUserLocationChange, showPotholes = true, isOnRoute = false }, ref) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const isMapLoaded = useRef(false);
@@ -33,6 +33,18 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
     const [currentLoc, setCurrentLoc] = useState([77.5946, 12.9716]);
     const currentLocRef = useRef([77.5946, 12.9716]);
 
+    const activeRouteRef = useRef(null);
+    const showPotholesRef = useRef(true);
+    const isOnRouteRef = useRef(false);
+
+    useEffect(() => {
+        showPotholesRef.current = showPotholes !== false;
+        isOnRouteRef.current = !!isOnRoute;
+        if (map.current && isMapLoaded.current) {
+            window.dispatchEvent(new Event('potholes:updated'));
+        }
+    }, [showPotholes, isOnRoute]);
+
     // Queued data in case methods are called before map load
     const pendingData = useRef({
         mode: 'nearby', // 'nearby' | 'routes'
@@ -43,6 +55,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
     });
 
     const applyNearbySegments = (segmentsGeoJSON) => {
+        activeRouteRef.current = null;
         if (!map.current || !isMapLoaded.current) {
             pendingData.current.mode = 'nearby';
             pendingData.current.nearbySegments = segmentsGeoJSON;
@@ -68,6 +81,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
     };
 
     const applyRoutes = (routes, selectedIndex, destinationCoords) => {
+        activeRouteRef.current = routes?.[selectedIndex] || null;
         if (!map.current || !isMapLoaded.current) {
             pendingData.current.mode = 'routes';
             pendingData.current.routes = routes;
@@ -331,6 +345,12 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
 
         const refreshViewportPotholes = async () => {
             if (!map.current || !isMapLoaded.current) return;
+            
+            if (!showPotholesRef.current) {
+                map.current?.getSource('potholes-source')?.setData({ type: 'FeatureCollection', features: [] });
+                return;
+            }
+
             const bounds = map.current.getBounds();
             const bbox = [
                 bounds.getWest(),
@@ -340,7 +360,24 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
             ].join(',');
             try {
                 const potholeData = await api.fetchPotholes(bbox);
-                map.current?.getSource('potholes-source')?.setData(potholeData);
+                
+                if (isOnRouteRef.current && activeRouteRef.current) {
+                    const routePotholes = [];
+                    activeRouteRef.current.segments.forEach(seg => {
+                        if (seg.potholes) {
+                            seg.potholes.forEach((coord, idx) => {
+                                routePotholes.push({
+                                    type: 'Feature',
+                                    geometry: { type: 'Point', coordinates: coord },
+                                    properties: { id: `route-pt-${idx}`, confidence: 0.9, severity: 'MEDIUM' }
+                                });
+                            });
+                        }
+                    });
+                    map.current?.getSource('potholes-source')?.setData({ type: 'FeatureCollection', features: routePotholes });
+                } else {
+                    map.current?.getSource('potholes-source')?.setData(potholeData);
+                }
             } catch (err) {
                 console.warn('Error fetching viewport potholes:', err);
             }
@@ -519,3 +556,4 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
         </button>
     `;
 });
+

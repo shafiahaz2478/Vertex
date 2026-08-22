@@ -1,4 +1,4 @@
-import { MOCK_POTHOLES, MOCK_ROAD_SEGMENTS, MOCK_DESTINATIONS, MOCK_ROUTES } from './mockData.js';
+import { MOCK_POTHOLES, MOCK_ROAD_SEGMENTS, MOCK_DESTINATIONS, MOCK_ROUTES } from './mockData.js?v=4';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const API_BASE_URL = 'https://vertex-backend-hf09.onrender.com/api/v1';
@@ -6,6 +6,15 @@ const OSRM_BASE_URL = 'https://router.project-osrm.org';
 const CONDITION_LEVELS = ['GOOD', 'MODERATE', 'POOR', 'HIGH_RISK'];
 let pendingDetections = [];
 let batchTimer = null;
+
+const getConditionFromPotholes = (potholes, distanceKm) => {
+  if (distanceKm <= 0) return 'GOOD';
+  const perKm = potholes / distanceKm;
+  if (perKm === 0) return 'GOOD';
+  if (perKm <= 2) return 'MODERATE'; // 1-2
+  if (perKm <= 4) return 'POOR';     // 3-4 (user said 2-4)
+  return 'HIGH_RISK';                // 5+
+};
 
 const notifyPotholesUpdated = () => window.dispatchEvent(new Event('potholes:updated'));
 
@@ -46,10 +55,26 @@ const asRoute = (route, index) => {
   const steps = route.legs?.flatMap(leg => leg.steps || []) || [];
   const segments = steps
     .filter(step => step.geometry?.coordinates?.length > 1)
-    .map((step, stepIndex) => ({
-      conditionLevel: CONDITION_LEVELS[(index + stepIndex) % CONDITION_LEVELS.length],
-      coordinates: step.geometry.coordinates
-    }));
+    .map((step, stepIndex) => {
+      const distanceKm = (step.distance || 100) / 1000;
+      // Simulate realistic potholes based on step distance to test color mapping
+      const simulatedPotholesPerKm = [0, 1.5, 3.5, 6][(index + stepIndex) % 4]; 
+      const simulatedPotholes = Math.round(simulatedPotholesPerKm * distanceKm);
+      
+      const stepPotholes = [];
+      if (simulatedPotholes > 0 && step.geometry.coordinates.length > 0) {
+          for (let i = 0; i < simulatedPotholes; i++) {
+              const ptIdx = Math.floor(Math.random() * step.geometry.coordinates.length);
+              stepPotholes.push(step.geometry.coordinates[ptIdx]);
+          }
+      }
+
+      return {
+        conditionLevel: getConditionFromPotholes(simulatedPotholes, distanceKm),
+        coordinates: step.geometry.coordinates,
+        potholes: stepPotholes
+      };
+    });
 
   return {
     id: `osrm-route-${index}`,
@@ -96,7 +121,38 @@ export const api = {
     } catch (error) {
       console.warn('Could not load backend potholes; using demo data.', error);
       await delay(300);
-      return { type: 'FeatureCollection', features: MOCK_POTHOLES };
+      let features = MOCK_POTHOLES;
+      if (bbox) {
+          const [minLng, minLat, maxLng, maxLat] = bbox.split(',').map(Number);
+          features = features.filter(p => {
+              const [lng, lat] = p.geometry.coordinates;
+              return lng >= minLng && lng <= maxLng && lat >= minLat && lat <= maxLat;
+          });
+
+          // Generate a dense cluster of dynamic mock potholes in the viewport if it's mostly empty
+          if (features.length < 5) {
+              const numDynamic = Math.floor(Math.random() * 20) + 40; // 40 to 60
+              for (let i = 0; i < numDynamic; i++) {
+                  const dLng = minLng + (Math.random() * (maxLng - minLng));
+                  const dLat = minLat + (Math.random() * (maxLat - minLat));
+                  const newFeature = {
+                      type: 'Feature',
+                      geometry: { type: 'Point', coordinates: [dLng, dLat] },
+                      properties: {
+                          id: `dyn-pothole-${Date.now()}-${i}`,
+                          road_name: 'Nearby Road',
+                          confidence: 0.8,
+                          severity: Math.random() > 0.6 ? 'HIGH' : (Math.random() > 0.3 ? 'MEDIUM' : 'LOW'),
+                          verified_count: 1,
+                          status: 'Detected'
+                      }
+                  };
+                  features.push(newFeature);
+                  MOCK_POTHOLES.push(newFeature); // persist them so they don't vanish on pan
+              }
+          }
+      }
+      return { type: 'FeatureCollection', features };
     }
   },
 
@@ -112,17 +168,22 @@ export const api = {
       const roadRoutes = await Promise.all(endpoints.map(endpoint => fetchRoadRoute(center, endpoint)));
       return {
         type: 'FeatureCollection',
-        features: roadRoutes.map((routes, index) => ({
-          type: 'Feature',
-          geometry: routes[0].geometry,
-          properties: {
-            id: `nearby-osrm-${index}`,
-            name: 'OpenStreetMap road geometry',
-            potholeCount: index + 1,
-            severePotholeCount: index === 2 ? 1 : 0,
-            conditionLevel: CONDITION_LEVELS[index + 1]
-          }
-        }))
+        features: roadRoutes.map((routes, index) => {
+          const route = routes[0];
+          const distanceKm = (route.distance || 500) / 1000;
+          const potholeCount = index + 1;
+          return {
+            type: 'Feature',
+            geometry: route.geometry,
+            properties: {
+              id: `nearby-osrm-${index}`,
+              name: 'OpenStreetMap road geometry',
+              potholeCount: potholeCount,
+              severePotholeCount: index === 2 ? 1 : 0,
+              conditionLevel: getConditionFromPotholes(potholeCount, distanceKm)
+            }
+          };
+        })
       };
     } catch (error) {
       console.warn('Could not load OSRM road geometry; using offline sample.', error);

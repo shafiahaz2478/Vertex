@@ -18,6 +18,7 @@ function App() {
     const [selectedHazard, setSelectedHazard] = useState(null);
     const [activeModal, setActiveModal] = useState(null);
     const [proximityAlert, setProximityAlert] = useState(null);
+    const [showPotholes, setShowPotholes] = useState(true);
     
     // State machine for Map
     const [destination, setDestination] = useState(null);
@@ -125,6 +126,8 @@ function App() {
             ref=${mapRef} 
             onHazardClick=${(hazard) => setSelectedHazard(hazard)} 
             onUserLocationChange=${handleUserLocationChange}
+            showPotholes=${showPotholes}
+            isOnRoute=${!!destination}
         />
         
         <div className="ui-layer">
@@ -162,9 +165,17 @@ function App() {
             ${activeModal === 'dashcam' && html`<${DashcamFlow} onClose=${() => setActiveModal(null)} />`}
             ${activeModal === 'phone' && html`<${PhoneCameraFlow} onClose=${() => setActiveModal(null)} />`}
             ${activeModal === 'reports' && html`<${MyReports} onClose=${() => setActiveModal(null)} />`}
+
+            <div 
+                className="absolute bottom-6 right-20 z-40 bg-white p-3 rounded-full shadow-lg border border-gray-100 text-blue-600 hover:bg-gray-50 focus:outline-none pointer-events-auto cursor-pointer font-bold text-sm"
+                onClick=${() => setShowPotholes(!showPotholes)}
+            >
+                ${showPotholes ? 'Hide Potholes' : 'Show Potholes'}
+            </div>
         </div>
     `;
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(html`<${App} />`);
+

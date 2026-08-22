@@ -57,29 +57,28 @@ export function PhoneCameraFlow({ onClose }) {
                           state === 'scanning' ? 'Scanning Road Surface' : 
                           'Scanning Paused'}
                     </h2>
-                    
-                    <p className="text-gray-400 mb-6 text-sm">
-                        ${state === 'scanning' 
-                            ? html`Detected <span className="font-bold text-green-400">${hazardsDetected}</span> hazards this session` 
-                            : 'Mount phone on dashboard. The app will use local AI to detect road hazards.'}
+                    <p className="text-sm text-gray-400 mb-8 h-10">
+                        ${state === 'ready' ? 'Mount phone on dashboard to start mapping road conditions.' :
+                          `Hazards Detected: ${hazardsDetected}`}
                     </p>
 
-                    <div className="w-full space-y-3">
-                        ${(state === 'ready' || state === 'paused') && html`
-                            <button onClick=${() => setState('scanning')} className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-colors flex justify-center items-center gap-2">
-                                <${Play} size=${18} /> Start Camera
-                            </button>
+                    <button 
+                        onClick=${() => setState(state === 'scanning' ? 'paused' : 'scanning')}
+                        className=${classNames(
+                            "w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all active:scale-95",
+                            state === 'scanning' 
+                                ? "bg-red-500 hover:bg-red-600 text-white" 
+                                : "bg-blue-600 hover:bg-blue-700 text-white"
+                        )}
+                    >
+                        ${state === 'scanning' ? html`
+                            <${Pause} size=${24} /> Pause Camera
+                        ` : html`
+                            <${Play} size=${24} /> Start Camera
                         `}
-
-                        ${state === 'scanning' && html`
-                            <button onClick=${() => setState('paused')} className="w-full py-3.5 bg-gray-700 text-white rounded-xl font-bold hover:bg-gray-600 transition-colors flex justify-center items-center gap-2">
-                                <${Pause} size=${18} /> Pause
-                            </button>
-                        `}
-                    </div>
+                    </button>
                 </div>
             </div>
         </div>
     `;
 }
-
