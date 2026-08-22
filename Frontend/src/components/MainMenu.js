@@ -47,40 +47,10 @@ export function MainMenu({ onSelectMode }) {
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mb-2">Contribute</p>
                     <div className="space-y-1 mb-4">
                         <${MenuItem} 
-                            icon=${html`<${AlertTriangle} size=${20} />`} 
-                            label="Report Hazard" 
-                            subtitle="Submit a road problem"
-                            onClick=${() => { onSelectMode('report'); toggleMenu(); }} 
-                        />
-                        <${MenuItem} 
-                            icon=${html`<${Camera} size=${20} />`} 
-                            label="Connect Dashcam" 
-                            subtitle="WiFi edge AI detection"
-                            onClick=${() => { onSelectMode('dashcam'); toggleMenu(); }} 
-                        />
-                        <${MenuItem} 
                             icon=${html`<${Smartphone} size=${20} />`} 
                             label="Phone Camera" 
                             subtitle="Use phone as sensor"
                             onClick=${() => { onSelectMode('phone'); toggleMenu(); }} 
-                        />
-                    </div>
-
-                    <div className="h-px bg-gray-100 my-2" />
-
-                    <!-- Account Section -->
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mb-2 mt-4">Account</p>
-                    <div className="space-y-1">
-                        <${MenuItem} 
-                            icon=${html`<${List} size=${20} />`} 
-                            label="My Reports" 
-                            subtitle="Track your submissions"
-                            onClick=${() => { onSelectMode('reports'); toggleMenu(); }} 
-                        />
-                        <${MenuItem} 
-                            icon=${html`<${Settings} size=${20} />`} 
-                            label="Settings" 
-                            onClick=${() => { toggleMenu(); }} 
                         />
                     </div>
                 </div>
