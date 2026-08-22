@@ -36,7 +36,7 @@ const distanceMeters = ([lng1, lat1], [lng2, lat2]) => {
 
 const routeCoordinates = (route) => (route?.segments || []).flatMap(segment => segment.coordinates || []);
 
-export const MapComponent = forwardRef(function MapComponent({ onHazardClick, onSegmentClick, onRouteClick, onUserLocationChange, showPotholes = true, isOnRoute = false }, ref) {
+export const MapComponent = forwardRef(function MapComponent({ onHazardClick, onHazardRightClick, onSegmentClick, onRouteClick, onUserLocationChange, showPotholes = true, isOnRoute = false }, ref) {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const isMapLoaded = useRef(false);
@@ -491,7 +491,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
                 paint: {
                     'line-color': '#ffffff',
                     'line-width': 12,
-                    'line-opacity': 0.98
+                    'line-opacity': 0.0
                 }
             });
 
@@ -511,7 +511,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
                         '#22c55e'
                     ],
                     'line-width': 8,
-                    'line-opacity': 1.0
+                    'line-opacity': 0.0
                 }
             });
 
@@ -738,6 +738,17 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
                 if (e.features && e.features.length > 0) {
                     const properties = e.features[0].properties;
                     if (onHazardClick) onHazardClick(properties);
+                }
+            });
+            
+            // Handle right clicks on potholes
+            map.current.on('contextmenu', 'pothole-points', (e) => {
+                if (e.originalEvent) {
+                    e.originalEvent.preventDefault();
+                }
+                if (e.features && e.features.length > 0) {
+                    const properties = e.features[0].properties;
+                    if (onHazardRightClick) onHazardRightClick(properties);
                 }
             });
             map.current.on('mouseenter', 'pothole-points', () => { map.current.getCanvas().style.cursor = 'pointer'; });

@@ -19,6 +19,7 @@ function App() {
     const [activeModal, setActiveModal] = useState(null);
     const [proximityAlert, setProximityAlert] = useState(null);
     const [showPotholes, setShowPotholes] = useState(true);
+    const [rightClickedHazard, setRightClickedHazard] = useState(null);
     
     // State machine for Map
     const [destination, setDestination] = useState(null);
@@ -167,6 +168,7 @@ function App() {
         <${MapComponent} 
             ref=${mapRef} 
             onHazardClick=${(hazard) => setSelectedHazard(hazard)}
+            onHazardRightClick=${(hazard) => setRightClickedHazard(hazard)}
             onSegmentClick=${handleSegmentClick}
             onRouteClick=${handleRouteClickOnMap}
             onUserLocationChange=${handleUserLocationChange}
@@ -175,6 +177,21 @@ function App() {
         />
         
         <div className="ui-layer">
+            ${rightClickedHazard && html`
+                <div className="absolute top-6 right-6 z-50 pointer-events-auto">
+                    <button 
+                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center gap-2 transition-all active:scale-95"
+                        onClick=${() => {
+                            setActiveModal('report');
+                            setRightClickedHazard(null);
+                        }}
+                    >
+                        <${AlertCircle} size=${18} />
+                        Report Pothole
+                    </button>
+                </div>
+            `}
+            
             ${!navigationActive && html`
                 <${SearchBox}
                     userCoords=${userLoc}
