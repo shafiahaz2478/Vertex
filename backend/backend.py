@@ -289,7 +289,7 @@ def report_pothole(pothole_id: int, payload: ReportRequest):
     # 5. Construct the Resend API payload
     email_payload = {
         "from": "Dashcam AI <onboarding@resend.dev>",  # Must be this for free tier
-        "to": [payload.target_email],  # Must be your verified Resend email
+        "to": "shafiahaz2478@gmail.com",  # Must be your verified Resend email
         "subject": f"Official Hazard Report: Pothole on {pothole['road_name']}",
         "text": (
             f"Automated Civic Hazard Report\n\n"

@@ -1,0 +1,35 @@
+# ==============================================================================
+# Distributed Road Intelligence System (DRIS) - Dependency Specification
+# ==============================================================================
+# Core Backend Framework & Server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+python-dotenv>=1.0.1
+
+# Database & BaaS Client (Supabase PostgreSQL / PostGIS)
+supabase>=2.3.4
+postgrest>=0.13.0
+gotrue>=2.4.2
+realtime>=1.0.0
+
+# HTTP & API Client Libraries
+httpx>=0.26.0
+requests>=2.31.0
+aiofiles>=23.2.1
+
+# Computer Vision & Deep Learning (YOLOv8 Edge/Server Inference)
+ultralytics>=8.1.0
+opencv-python>=4.9.0.80
+torch>=2.2.0
+torchvision>=0.17.0
+onnx>=1.15.0
+onnxruntime>=1.17.0
+
+# Mathematical & Geospatial Utilities
+numpy>=1.26.3
+scipy>=1.12.0
+geographiclib>=2.0
+
+# Civic Reporting & Email Escalation
+resend>=0.8.0

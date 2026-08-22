@@ -38,6 +38,7 @@
         #status-bar {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             max-width: 640px;
             margin: 0 auto 10px auto;
             padding: 10px;
@@ -45,14 +46,38 @@
             border-radius: 8px;
             font-size: 14px;
         }
-        .status-text { color: #4ade80; font-weight: bold; }
-        .queue-text { color: #facc15; }
+        .status-text { color: #4ade80; font-weight: bold; flex: 1; text-align: left; }
+        .queue-text { color: #facc15; flex: 1; text-align: right; }
+
+        /* New Button Styles */
+        .capture-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .capture-btn.armed {
+            background: #ef4444;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
     <div id="status-bar">
         <span id="status" class="status-text">Loading AI Model...</span>
+        <!-- New Capture Button -->
+        <button id="capture-btn" class="capture-btn">📸 Capture Next</button>
         <span id="queue-status" class="queue-text">Queue: 0</span>
     </div>
 
@@ -65,19 +90,18 @@
 
     <script>
         // --- 1. Configuration ---
-        // Your live Railway backend API
-        const BACKEND_URL = "https://vertex-backend-hf09.onrender.com/api/v1/potholes/batch";
+        const BATCH_API_URL = "https://vertex-backend-hf09.onrender.com/api/v1/potholes/batch";
+        const SINGLE_API_URL = "https://vertex-backend-hf09.onrender.com/api/v1/potholes"; // Added for image uploads
 
-        // AI Settings
-        const CONFIDENCE_THRESHOLD = 0.40; // Lowered slightly to ensure detections trigger
-        const INPUT_SIZE = 640; // Change to 320 if you re-exported a smaller model
+        const CONFIDENCE_THRESHOLD = 0.40;
+        const INPUT_SIZE = 640;
         const inputShape = [1, 3, INPUT_SIZE, INPUT_SIZE];
 
-        // Batch Upload Settings
-        const BATCH_INTERVAL_MS = 10000; // Upload every 10 seconds for demo (usually 10 mins in prod)
+        const BATCH_INTERVAL_MS = 10000;
         let potholeBuffer = [];
         let lastUploadTime = Date.now();
         let lastGPS = { lat: null, lon: null };
+        let captureNextImage = false; // New state flag
 
         // DOM Elements
         const video = document.getElementById('video');
@@ -85,10 +109,18 @@
         const ctx = overlay.getContext('2d');
         const statusEl = document.getElementById('status');
         const queueEl = document.getElementById('queue-status');
+        const captureBtn = document.getElementById('capture-btn'); // New element
 
         let session;
 
-        // --- 2. Initialize GPS Tracking ---
+        // --- 2. Button Event Listener ---
+        captureBtn.addEventListener('click', () => {
+            captureNextImage = true;
+            captureBtn.classList.add('armed');
+            captureBtn.innerText = "📸 Waiting for Pothole...";
+        });
+
+        // --- 3. Initialize GPS Tracking ---
         function startGPS() {
             if ("geolocation" in navigator) {
                 navigator.geolocation.watchPosition(
@@ -102,16 +134,15 @@
             }
         }
 
-        // --- 3. Initialize AI Model ---
+        // --- 4. Initialize AI Model ---
         async function loadModel() {
             try {
                 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
-                // Using WASM with optimizations for stable CPU fallback
                 session = await ort.InferenceSession.create('pothole.onnx', {
                     executionProviders: ['wasm'],
                     graphOptimizationLevel: 'all'
                 });
-                statusEl.innerText = "Model Ready. Starting Camera...";
+                statusEl.innerText = "Model Ready.";
                 startGPS();
                 startCamera();
             } catch (e) {
@@ -121,7 +152,7 @@
             }
         }
 
-        // --- 4. Start Camera ---
+        // --- 5. Start Camera ---
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -132,8 +163,7 @@
                 video.onloadedmetadata = () => {
                     overlay.width = video.videoWidth;
                     overlay.height = video.videoHeight;
-                    statusEl.innerText = "Scanning for Potholes...";
-                    // Start the detection loop
+                    statusEl.innerText = "Scanning...";
                     setTimeout(detectFrame, 500);
                 };
             } catch (err) {
@@ -141,11 +171,10 @@
             }
         }
 
-        // --- 5. Preprocess Image ---
+        // --- 6. Preprocess Image ---
         function preprocess(canvasData) {
             const floatData = new Float32Array(INPUT_SIZE * INPUT_SIZE * 3);
             for (let i = 0; i < INPUT_SIZE * INPUT_SIZE; i++) {
-                // Normalize pixel values to 0.0 - 1.0 for YOLOv8
                 floatData[i] = canvasData[i * 4] / 255.0;         // Red
                 floatData[INPUT_SIZE * INPUT_SIZE + i] = canvasData[i * 4 + 1] / 255.0; // Green
                 floatData[2 * INPUT_SIZE * INPUT_SIZE + i] = canvasData[i * 4 + 2] / 255.0; // Blue
@@ -153,11 +182,37 @@
             return new ort.Tensor('float32', floatData, inputShape);
         }
 
-        // --- 6. The API Batching Logic ---
-        async function processDetection(confidence) {
-            if (!lastGPS.lat || !lastGPS.lon) return; // Ignore if no GPS fix
+        // --- 7. Upload Single Image Report ---
+        async function uploadSingleWithImage(confidence, base64Image) {
+            statusEl.innerText = "Uploading Image...";
+            try {
+                const response = await fetch(SINGLE_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        latitude: lastGPS.lat,
+                        longitude: lastGPS.lon,
+                        confidence: parseFloat(confidence.toFixed(2)),
+                        image_base64: base64Image
+                    })
+                });
 
-            // Check if we already logged a pothole very close to here
+                if (response.ok) {
+                    statusEl.innerText = "Image Sent!";
+                    setTimeout(() => statusEl.innerText = "Scanning...", 2000);
+                } else {
+                    statusEl.innerText = "Upload Failed.";
+                    setTimeout(() => statusEl.innerText = "Scanning...", 2000);
+                }
+            } catch (err) {
+                console.error("Upload Error:", err);
+            }
+        }
+
+        // --- 8. The API Batching Logic ---
+        async function processDetection(confidence) {
+            if (!lastGPS.lat || !lastGPS.lon) return;
+
             const isDuplicate = potholeBuffer.some(p => {
                 return Math.abs(p.latitude - lastGPS.lat) < 0.0001 &&
                        Math.abs(p.longitude - lastGPS.lon) < 0.0001;
@@ -173,19 +228,18 @@
                 queueEl.innerText = `Queue: ${potholeBuffer.length}`;
             }
 
-            // Check if it's time to upload
             if (Date.now() - lastUploadTime > BATCH_INTERVAL_MS && potholeBuffer.length > 0) {
                 await uploadBatch();
             }
         }
 
         async function uploadBatch() {
-            const payload = [...potholeBuffer]; // Copy buffer
-            potholeBuffer = []; // Clear current buffer immediately
+            const payload = [...potholeBuffer];
+            potholeBuffer = [];
             queueEl.innerText = `Queue: 0 (Uploading...)`;
 
             try {
-                const response = await fetch(BACKEND_URL, {
+                const response = await fetch(BATCH_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ potholes: payload })
@@ -195,21 +249,18 @@
                     lastUploadTime = Date.now();
                     queueEl.innerText = `Queue: 0 (Synced)`;
                 } else {
-                    // If failed, put them back in the queue
                     potholeBuffer = [...payload, ...potholeBuffer];
                     queueEl.innerText = `Queue: ${potholeBuffer.length} (Sync Failed)`;
                 }
             } catch (err) {
-                console.error("Upload Error:", err);
                 potholeBuffer = [...payload, ...potholeBuffer];
             }
         }
 
-        // --- 7. Run AI Loop ---
+        // --- 9. Run AI Loop ---
         async function detectFrame() {
             if (!session) return;
 
-            // Draw video to hidden canvas to extract pixels
             const offscreen = document.createElement('canvas');
             offscreen.width = INPUT_SIZE;
             offscreen.height = INPUT_SIZE;
@@ -225,7 +276,6 @@
 
                 ctx.clearRect(0, 0, overlay.width, overlay.height);
 
-                // YOLOv8 parsing
                 for (let i = 0; i < 8400; i++) {
                     const confidence = output[i + 8400 * 4];
 
@@ -241,13 +291,24 @@
                         const x = (cx - w / 2) * scaleX;
                         const y = (cy - h / 2) * scaleY;
 
-                        // Draw Box
-                        ctx.strokeStyle = '#22c55e'; // Bright green
+                        ctx.strokeStyle = '#22c55e';
                         ctx.lineWidth = 4;
                         ctx.strokeRect(x, y, w * scaleX, h * scaleY);
 
-                        // Pass to API logic
-                        processDetection(confidence);
+                        // If armed, take the picture and send to the single ingest endpoint
+                        if (captureNextImage && lastGPS.lat && lastGPS.lon) {
+                            captureNextImage = false; // Disarm
+                            captureBtn.classList.remove('armed');
+                            captureBtn.innerText = "📸 Capture Next";
+
+                            // Extract compressed JPEG from canvas
+                            const base64Image = offscreen.toDataURL('image/jpeg', 0.7);
+                            uploadSingleWithImage(confidence, base64Image);
+                        } else {
+                            // Otherwise, behave normally and add to batch
+                            processDetection(confidence);
+                        }
+
                         break;
                     }
                 }
@@ -255,11 +316,9 @@
                 console.error("Inference error:", e);
             }
 
-            // Loop again after 500ms (2 FPS) to save battery and prevent browser freeze
             setTimeout(detectFrame, 500);
         }
 
-        // Start everything
         loadModel();
     </script>
 </body>
