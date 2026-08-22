@@ -215,7 +215,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
             map.current.easeTo({
                 center: currentLocRef.current,
                 zoom: 17.5,
-                pitch: 60,
+                pitch: 0,
                 bearing: routeBearing,
                 duration: 900,
                 essential: true
@@ -361,7 +361,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
             map.current.easeTo({
                 center: coords,
                 zoom: 17.5,
-                pitch: 60,
+                pitch: 0,
                 bearing: heading,
                 duration: 500,
                 essential: true
@@ -393,7 +393,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
         requestCurrentLocation().then((coords) => {
             if (map.current) {
                 if (navigationRef.current.active) {
-                    map.current.easeTo({ center: coords, zoom: 17.5, pitch: 60, bearing: navigationRef.current.bearing, duration: 750 });
+                    map.current.easeTo({ center: coords, zoom: 17.5, pitch: 0, bearing: navigationRef.current.bearing, duration: 750 });
                 } else {
                     map.current.flyTo({ center: coords, zoom: 15, duration: 900 });
                 }
@@ -407,7 +407,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
         setIs3DMode(next3D);
         if (next3D) {
             enable3DBuildings();
-            map.current.easeTo({ pitch: 60, duration: 650 });
+            map.current.easeTo({ pitch: 0, duration: 650 });
         } else {
             map.current.easeTo({ pitch: 0, duration: 650 });
         }
@@ -780,14 +780,7 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
         
         <!-- Floating Map Controls (Locate & 3D Tilt Toggle) -->
         <div className="absolute bottom-6 right-4 z-40 flex flex-col gap-2.5 pointer-events-auto">
-            <button 
-                onClick=${toggle3DView}
-                className="bg-white p-3 rounded-full shadow-lg border border-gray-100 text-gray-700 hover:text-blue-600 hover:bg-gray-50 focus:outline-none transition-all active:scale-95 flex items-center justify-center font-bold text-xs"
-                title=${is3DMode ? "Switch to 2D Top-Down View" : "Switch to 3D Navigation Perspective"}
-            >
-                ${is3DMode ? "2D" : "3D"}
-            </button>
-            
+
             <button 
                 onClick=${handleLocateClick}
                 className="bg-white p-3 rounded-full shadow-lg border border-gray-100 text-blue-600 hover:bg-gray-50 focus:outline-none transition-transform active:scale-95"
