@@ -725,7 +725,12 @@ export const MapComponent = forwardRef(function MapComponent({ onHazardClick, on
                 type: 'circle',
                 source: 'potholes-source',
                 paint: {
-                    'circle-color': '#ef4444',
+                    'circle-color': [
+                        'case',
+                        ['==', ['get', 'has_image'], true],
+                        '#000000',
+                        '#ef4444'
+                    ],
                     'circle-radius': 5,
                     'circle-stroke-width': 1.5,
                     'circle-stroke-color': '#ffffff',
