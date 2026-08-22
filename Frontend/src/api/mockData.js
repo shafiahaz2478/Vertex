@@ -1,177 +1,68 @@
-// Comprehensive Mock Pothole Database for Bangalore area
-// ~25 potholes with severity, status, and accountability lifecycle
+// Comprehensive Mock Data for Map-First UI
 
+// Individual Pothole markers for detailed inspection (kept as secondary info)
 export const MOCK_POTHOLES = [
-  // --- Kasturba Road ---
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.594697, 12.971848] }, properties: { id: 1, road_name: "Vittal Mallya Road", confidence: 0.88, severity: "HIGH", verified_count: 4, detected_at: "2026-08-22T06:10:00Z", status: "Reported" } },
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.597964, 12.973816] }, properties: { id: 3, road_name: "MG Road area", confidence: 0.95, severity: "HIGH", verified_count: 12, detected_at: "2026-08-21T14:30:00Z", status: "Under Repair" } },
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.590834, 12.969129] }, properties: { id: 5, road_name: "Richmond Road area", confidence: 0.76, severity: "MEDIUM", verified_count: 2, detected_at: "2026-08-22T08:15:00Z", status: "Detected" } },
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.602447, 12.969455] }, properties: { id: 8, road_name: "Residency Road", confidence: 0.91, severity: "HIGH", verified_count: 7, detected_at: "2026-08-20T11:00:00Z", status: "Verified" } },
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.614991, 12.955908] }, properties: { id: 11, road_name: "Inner Ring Road area", confidence: 0.97, severity: "HIGH", verified_count: 22, detected_at: "2026-08-10T08:00:00Z", status: "Under Repair" } },
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.609729, 12.958036] }, properties: { id: 20, road_name: "Hosur Road area", confidence: 0.93, severity: "HIGH", verified_count: 11, detected_at: "2026-08-15T06:30:00Z", status: "Reported" } },
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.597013, 12.962132] }, properties: { id: 23, road_name: "Langford Road", confidence: 0.96, severity: "HIGH", verified_count: 16, detected_at: "2026-08-09T09:00:00Z", status: "Resolved" } },
+  { type: "Feature", geometry: { type: "Point", coordinates: [77.578137, 12.987919] }, properties: { id: 25, road_name: "Sankey Road area", confidence: 0.69, severity: "LOW", verified_count: 1, detected_at: "2026-08-22T11:00:00Z", status: "Detected" } }
+];
+
+// 500m nearby road segments for initial state (State A)
+export const MOCK_ROAD_SEGMENTS = [
   {
     type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5946, 12.9716] },
-    properties: { id: 1, road_name: "Kasturba Road", confidence: 0.88, severity: "HIGH", verified_count: 4, detected_at: "2026-08-22T06:10:00Z", status: "Reported" }
+    geometry: { type: "LineString", coordinates: [[77.5910, 12.9725], [77.5946, 12.9716], [77.5980, 12.9708]] },
+    properties: { id: "seg1", name: "Kasturba Road", potholeCount: 2, severePotholeCount: 1, conditionLevel: "POOR" }
   },
   {
     type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5952, 12.9720] },
-    properties: { id: 2, road_name: "Kasturba Road", confidence: 0.79, severity: "MEDIUM", verified_count: 2, detected_at: "2026-08-20T10:30:00Z", status: "Verified" }
-  },
-  // --- MG Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5980, 12.9740] },
-    properties: { id: 3, road_name: "MG Road", confidence: 0.95, severity: "HIGH", verified_count: 12, detected_at: "2026-08-21T14:30:00Z", status: "Under Repair" }
+    geometry: { type: "LineString", coordinates: [[77.5946, 12.9716], [77.5950, 12.9760], [77.5960, 12.9790]] },
+    properties: { id: "seg2", name: "Cubbon Road", potholeCount: 0, severePotholeCount: 0, conditionLevel: "GOOD" }
   },
   {
     type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5995, 12.9748] },
-    properties: { id: 4, road_name: "MG Road", confidence: 0.72, severity: "LOW", verified_count: 1, detected_at: "2026-08-22T09:00:00Z", status: "Detected" }
-  },
-  // --- Richmond Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5910, 12.9690] },
-    properties: { id: 5, road_name: "Richmond Road", confidence: 0.76, severity: "MEDIUM", verified_count: 2, detected_at: "2026-08-22T08:15:00Z", status: "Detected" }
+    geometry: { type: "LineString", coordinates: [[77.5960, 12.9740], [77.6010, 12.9745], [77.6070, 12.9750]] },
+    properties: { id: "seg3", name: "MG Road", potholeCount: 5, severePotholeCount: 2, conditionLevel: "HIGH_RISK" }
   },
   {
     type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5920, 12.9685] },
-    properties: { id: 6, road_name: "Richmond Road", confidence: 0.91, severity: "HIGH", verified_count: 8, detected_at: "2026-08-18T16:00:00Z", status: "Reported" }
+    geometry: { type: "LineString", coordinates: [[77.5890, 12.9680], [77.5930, 12.9695], [77.5970, 12.9705]] },
+    properties: { id: "seg4", name: "Richmond Road", potholeCount: 1, severePotholeCount: 0, conditionLevel: "MODERATE" }
   },
   {
     type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5905, 12.9695] },
-    properties: { id: 7, road_name: "Richmond Road", confidence: 0.68, severity: "LOW", verified_count: 1, detected_at: "2026-08-22T07:45:00Z", status: "Detected" }
-  },
-  // --- Residency Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6020, 12.9700] },
-    properties: { id: 8, road_name: "Residency Road", confidence: 0.91, severity: "HIGH", verified_count: 7, detected_at: "2026-08-20T11:00:00Z", status: "Verified" }
+    geometry: { type: "LineString", coordinates: [[77.5970, 12.9690], [77.6020, 12.9700], [77.6060, 12.9710]] },
+    properties: { id: "seg5", name: "Residency Road", potholeCount: 3, severePotholeCount: 1, conditionLevel: "POOR" }
   },
   {
     type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6030, 12.9710] },
-    properties: { id: 9, road_name: "Residency Road", confidence: 0.83, severity: "MEDIUM", verified_count: 3, detected_at: "2026-08-19T13:20:00Z", status: "Reported" }
-  },
-  // --- Cubbon Park Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5850, 12.9750] },
-    properties: { id: 10, road_name: "Cubbon Park Road", confidence: 0.65, severity: "LOW", verified_count: 1, detected_at: "2026-08-22T09:45:00Z", status: "Detected" }
-  },
-  // --- Outer Ring Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6150, 12.9560] },
-    properties: { id: 11, road_name: "Outer Ring Road", confidence: 0.97, severity: "HIGH", verified_count: 22, detected_at: "2026-08-10T08:00:00Z", status: "Under Repair" }
+    geometry: { type: "LineString", coordinates: [[77.5920, 12.9670], [77.5950, 12.9680], [77.5980, 12.9690]] },
+    properties: { id: "seg6", name: "Lavelle Road", potholeCount: 0, severePotholeCount: 0, conditionLevel: "GOOD" }
   },
   {
     type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6180, 12.9540] },
-    properties: { id: 12, road_name: "Outer Ring Road", confidence: 0.94, severity: "HIGH", verified_count: 18, detected_at: "2026-08-11T09:30:00Z", status: "Reported" }
-  },
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6200, 12.9530] },
-    properties: { id: 13, road_name: "Outer Ring Road", confidence: 0.90, severity: "HIGH", verified_count: 15, detected_at: "2026-08-12T07:15:00Z", status: "Reported" }
-  },
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6220, 12.9520] },
-    properties: { id: 14, road_name: "Outer Ring Road", confidence: 0.88, severity: "MEDIUM", verified_count: 9, detected_at: "2026-08-14T11:45:00Z", status: "Verified" }
-  },
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6240, 12.9510] },
-    properties: { id: 15, road_name: "Outer Ring Road", confidence: 0.85, severity: "MEDIUM", verified_count: 6, detected_at: "2026-08-16T14:00:00Z", status: "Detected" }
-  },
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6260, 12.9505] },
-    properties: { id: 16, road_name: "Outer Ring Road", confidence: 0.92, severity: "HIGH", verified_count: 14, detected_at: "2026-08-13T10:30:00Z", status: "Reported" }
-  },
-  // --- Brigade Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6070, 12.9730] },
-    properties: { id: 17, road_name: "Brigade Road", confidence: 0.82, severity: "MEDIUM", verified_count: 5, detected_at: "2026-08-19T15:00:00Z", status: "Verified" }
-  },
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6080, 12.9725] },
-    properties: { id: 18, road_name: "Brigade Road", confidence: 0.71, severity: "LOW", verified_count: 2, detected_at: "2026-08-21T08:30:00Z", status: "Detected" }
-  },
-  // --- Lavelle Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5960, 12.9680] },
-    properties: { id: 19, road_name: "Lavelle Road", confidence: 0.74, severity: "LOW", verified_count: 1, detected_at: "2026-08-22T10:00:00Z", status: "Detected" }
-  },
-  // --- Hosur Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6100, 12.9580] },
-    properties: { id: 20, road_name: "Hosur Road", confidence: 0.93, severity: "HIGH", verified_count: 11, detected_at: "2026-08-15T06:30:00Z", status: "Reported" }
-  },
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6110, 12.9570] },
-    properties: { id: 21, road_name: "Hosur Road", confidence: 0.87, severity: "HIGH", verified_count: 9, detected_at: "2026-08-16T07:00:00Z", status: "Under Repair" }
-  },
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.6120, 12.9575] },
-    properties: { id: 22, road_name: "Hosur Road", confidence: 0.78, severity: "MEDIUM", verified_count: 4, detected_at: "2026-08-18T12:00:00Z", status: "Verified" }
-  },
-  // --- Bannerghatta Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5970, 12.9620] },
-    properties: { id: 23, road_name: "Bannerghatta Road", confidence: 0.96, severity: "HIGH", verified_count: 16, detected_at: "2026-08-09T09:00:00Z", status: "Resolved" }
-  },
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5975, 12.9610] },
-    properties: { id: 24, road_name: "Bannerghatta Road", confidence: 0.84, severity: "MEDIUM", verified_count: 5, detected_at: "2026-08-17T14:30:00Z", status: "Reported" }
-  },
-  // --- Sankey Road ---
-  {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [77.5780, 12.9880] },
-    properties: { id: 25, road_name: "Sankey Road", confidence: 0.69, severity: "LOW", verified_count: 1, detected_at: "2026-08-22T11:00:00Z", status: "Detected" }
+    geometry: { type: "LineString", coordinates: [[77.5946, 12.9716], [77.5910, 12.9660], [77.5880, 12.9630]] },
+    properties: { id: "seg7", name: "Vittal Mallya Road", potholeCount: 1, severePotholeCount: 0, conditionLevel: "MODERATE" }
   }
 ];
 
-export const MOCK_ROAD_SUMMARY = [
-  { road_name: "Outer Ring Road", pothole_count: 6, risk_level: "CRITICAL", avg_severity: "HIGH", condition_score: 28 },
-  { road_name: "Hosur Road", pothole_count: 3, risk_level: "HIGH", avg_severity: "HIGH", condition_score: 45 },
-  { road_name: "Bannerghatta Road", pothole_count: 2, risk_level: "HIGH", avg_severity: "HIGH", condition_score: 52 },
-  { road_name: "Richmond Road", pothole_count: 3, risk_level: "MODERATE", avg_severity: "MEDIUM", condition_score: 61 },
-  { road_name: "Kasturba Road", pothole_count: 2, risk_level: "MODERATE", avg_severity: "MEDIUM", condition_score: 65 },
-  { road_name: "Residency Road", pothole_count: 2, risk_level: "MODERATE", avg_severity: "MEDIUM", condition_score: 68 },
-  { road_name: "Brigade Road", pothole_count: 2, risk_level: "LOW", avg_severity: "MEDIUM", condition_score: 75 },
-  { road_name: "MG Road", pothole_count: 2, risk_level: "LOW", avg_severity: "LOW", condition_score: 82 },
-  { road_name: "Cubbon Park Road", pothole_count: 1, risk_level: "LOW", avg_severity: "LOW", condition_score: 90 },
-  { road_name: "Lavelle Road", pothole_count: 1, risk_level: "LOW", avg_severity: "LOW", condition_score: 88 },
-  { road_name: "Sankey Road", pothole_count: 1, risk_level: "LOW", avg_severity: "LOW", condition_score: 92 }
+// Destinations for search
+export const MOCK_DESTINATIONS = [
+  { id: "dest1", name: "Koramangala", coordinates: [77.6180, 12.9350] },
+  { id: "dest2", name: "Indiranagar", coordinates: [77.6380, 12.9780] },
+  { id: "dest3", name: "Cubbon Park", coordinates: [77.5930, 12.9750] },
+  { id: "dest4", name: "Whitefield", coordinates: [77.7490, 12.9690] },
+  { id: "dest5", name: "HSR Layout", coordinates: [77.6410, 12.9120] },
+  { id: "dest6", name: "Electronic City", coordinates: [77.6760, 12.8390] },
+  { id: "dest7", name: "Jayanagar", coordinates: [77.5830, 12.9250] }
 ];
 
-export const MOCK_ROUTE_OPTIONS = {
-  "Koramangala to Indiranagar": [
-    { route_name: "Via Outer Ring Road", distance_km: 8.2, time_min: 25, hazard_count: 6, high_severity: 4, condition_score: 28, risk_level: "CRITICAL" },
-    { route_name: "Via MG Road", distance_km: 10.1, time_min: 32, hazard_count: 2, high_severity: 0, condition_score: 82, risk_level: "LOW" },
-    { route_name: "Via Hosur Road", distance_km: 9.5, time_min: 29, hazard_count: 3, high_severity: 2, condition_score: 45, risk_level: "HIGH" }
-  ],
-  "Whitefield to MG Road": [
-    { route_name: "Via Outer Ring Road", distance_km: 18.5, time_min: 55, hazard_count: 6, high_severity: 4, condition_score: 28, risk_level: "CRITICAL" },
-    { route_name: "Via Old Airport Road", distance_km: 16.2, time_min: 48, hazard_count: 2, high_severity: 1, condition_score: 72, risk_level: "MODERATE" }
-  ],
-  "Jayanagar to Cubbon Park": [
-    { route_name: "Via Bannerghatta Road", distance_km: 7.8, time_min: 22, hazard_count: 2, high_severity: 1, condition_score: 52, risk_level: "HIGH" },
-    { route_name: "Via Richmond Road", distance_km: 6.5, time_min: 20, hazard_count: 3, high_severity: 1, condition_score: 61, risk_level: "MODERATE" },
-    { route_name: "Via Lavelle Road", distance_km: 7.1, time_min: 21, hazard_count: 1, high_severity: 0, condition_score: 88, risk_level: "LOW" }
-  ]
-};
-
-// Known locations for search / route picking
+// Known locations for autocomplete and reports
 export const KNOWN_LOCATIONS = [
   "Koramangala", "Indiranagar", "Whitefield", "MG Road", "Jayanagar",
   "Cubbon Park", "Bannerghatta Road", "Hosur Road", "Outer Ring Road",
@@ -179,3 +70,137 @@ export const KNOWN_LOCATIONS = [
   "Lavelle Road", "Sankey Road", "Electronic City", "HSR Layout",
   "BTM Layout", "Marathahalli", "Hebbal"
 ];
+
+// Routes for when destination is selected (State B)
+export const MOCK_ROUTES = {
+  // Routes to Koramangala
+  "dest1": [
+    {
+      id: "route1",
+      name: "Via Hosur Road",
+      distance_km: 6.2,
+      time_min: 18,
+      condition_score: 45,
+      risk_level: "HIGH",
+      segments: [
+        { conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [77.5960, 12.9650]] },
+        { conditionLevel: "HIGH_RISK", coordinates: [[77.5960, 12.9650], [77.6050, 12.9450]] },
+        { conditionLevel: "MODERATE", coordinates: [[77.6050, 12.9450], [77.6180, 12.9350]] }
+      ]
+    },
+    {
+      id: "route2",
+      name: "Via Inner Ring Road",
+      distance_km: 7.1,
+      time_min: 22,
+      condition_score: 82,
+      risk_level: "LOW",
+      segments: [
+        { conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [77.6100, 12.9700]] },
+        { conditionLevel: "GOOD", coordinates: [[77.6100, 12.9700], [77.6150, 12.9550]] },
+        { conditionLevel: "MODERATE", coordinates: [[77.6150, 12.9550], [77.6180, 12.9350]] }
+      ]
+    }
+  ],
+  // Routes to Indiranagar
+  "dest2": [
+    {
+      id: "route3",
+      name: "Via MG Road",
+      distance_km: 5.5,
+      time_min: 15,
+      condition_score: 30,
+      risk_level: "CRITICAL",
+      segments: [
+        { conditionLevel: "POOR", coordinates: [[77.5946, 12.9716], [77.6000, 12.9730]] },
+        { conditionLevel: "HIGH_RISK", coordinates: [[77.6000, 12.9730], [77.6200, 12.9750]] },
+        { conditionLevel: "MODERATE", coordinates: [[77.6200, 12.9750], [77.6380, 12.9780]] }
+      ]
+    },
+    {
+      id: "route4",
+      name: "Via Old Madras Road",
+      distance_km: 6.8,
+      time_min: 20,
+      condition_score: 75,
+      risk_level: "MODERATE",
+      segments: [
+        { conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [77.6050, 12.9850]] },
+        { conditionLevel: "MODERATE", coordinates: [[77.6050, 12.9850], [77.6250, 12.9820]] },
+        { conditionLevel: "GOOD", coordinates: [[77.6250, 12.9820], [77.6380, 12.9780]] }
+      ]
+    }
+  ],
+  // Routes to Cubbon Park
+  "dest3": [
+    {
+      id: "route5",
+      name: "Via Kasturba Road",
+      distance_km: 1.2,
+      time_min: 5,
+      condition_score: 88,
+      risk_level: "LOW",
+      segments: [
+        { conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [77.5930, 12.9750]] }
+      ]
+    }
+  ],
+  // Routes to Whitefield
+  "dest4": [
+    {
+      id: "route6",
+      name: "Via HAL Old Airport Road",
+      distance_km: 16.5,
+      time_min: 45,
+      condition_score: 65,
+      risk_level: "MODERATE",
+      segments: [
+        { conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [77.6350, 12.9600]] },
+        { conditionLevel: "MODERATE", coordinates: [[77.6350, 12.9600], [77.6950, 12.9550]] },
+        { conditionLevel: "POOR", coordinates: [[77.6950, 12.9550], [77.7490, 12.9690]] }
+      ]
+    },
+    {
+      id: "route7",
+      name: "Via Outer Ring Road",
+      distance_km: 19.0,
+      time_min: 52,
+      condition_score: 35,
+      risk_level: "CRITICAL",
+      segments: [
+        { conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [77.6200, 12.9800]] },
+        { conditionLevel: "HIGH_RISK", coordinates: [[77.6200, 12.9800], [77.6800, 12.9900]] },
+        { conditionLevel: "HIGH_RISK", coordinates: [[77.6800, 12.9900], [77.7490, 12.9690]] }
+      ]
+    }
+  ],
+  // Routes to HSR Layout
+  "dest5": [
+    {
+      id: "route8",
+      name: "Via Hosur Road & Silk Board",
+      distance_km: 9.8,
+      time_min: 26,
+      condition_score: 50,
+      risk_level: "HIGH",
+      segments: [
+        { conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [77.6050, 12.9500]] },
+        { conditionLevel: "HIGH_RISK", coordinates: [[77.6050, 12.9500], [77.6250, 12.9200]] },
+        { conditionLevel: "MODERATE", coordinates: [[77.6250, 12.9200], [77.6410, 12.9120]] }
+      ]
+    },
+    {
+      id: "route9",
+      name: "Via Intermediate Ring Road",
+      distance_km: 11.2,
+      time_min: 30,
+      condition_score: 78,
+      risk_level: "LOW",
+      segments: [
+        { conditionLevel: "GOOD", coordinates: [[77.5946, 12.9716], [77.6200, 12.9650]] },
+        { conditionLevel: "GOOD", coordinates: [[77.6200, 12.9650], [77.6350, 12.9300]] },
+        { conditionLevel: "MODERATE", coordinates: [[77.6350, 12.9300], [77.6410, 12.9120]] }
+      ]
+    }
+  ]
+};

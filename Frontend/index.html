@@ -13,19 +13,62 @@
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; }
         .pointer-events-auto { pointer-events: auto; }
         
-        /* Custom scrollbar for panels */
+        /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
+        /* User location marker animation */
+        .user-location-marker {
+            width: 20px;
+            height: 20px;
+            position: relative;
+        }
+        .user-location-marker .dot {
+            width: 14px;
+            height: 14px;
+            background-color: #3b82f6; /* blue-500 */
+            border: 2px solid white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        .user-location-marker .pulse {
+            width: 30px;
+            height: 30px;
+            background-color: #60a5fa; /* blue-400 */
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse-ring 2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+            z-index: 1;
+        }
+        @keyframes pulse-ring {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0.8; }
+            80%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        .dest-marker {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.2));
+        }
+
         @keyframes scan {
             0% { transform: translateY(-100%); }
             100% { transform: translateY(100%); }
         }
         .animate-scan { animation: scan 2s linear infinite; }
     </style>
-    <!-- Import Map to resolve dependencies cleanly -->
+    <!-- Import Map -->
     <script type="importmap">
     {
       "imports": {
@@ -40,7 +83,6 @@
 </head>
 <body>
     <div id="root"></div>
-    <!-- We will use bare specifiers in our JS now -->
     <script type="module" src="./src/main.js"></script>
 </body>
 </html>

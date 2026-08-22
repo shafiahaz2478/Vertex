@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { html, classNames } from '../utils.js';
-import { Menu, Camera, Smartphone, List, Settings, X, Activity, Navigation, AlertTriangle, Shield } from 'lucide-react';
+import { Menu, Camera, Smartphone, List, Settings, X, AlertTriangle, Shield } from 'lucide-react';
 
 export function MainMenu({ onSelectMode }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -43,23 +43,6 @@ export function MainMenu({ onSelectMode }) {
                 </div>
 
                 <div className="p-4 flex-1 overflow-y-auto">
-                    <!-- Explore Section -->
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mb-2">Explore</p>
-                    <div className="space-y-1 mb-4">
-                        <${MenuItem} 
-                            icon=${html`<${Activity} size=${20} />`} 
-                            label="Road Summaries" 
-                            subtitle="View hazardous roads"
-                            onClick=${() => { onSelectMode('summaries'); toggleMenu(); }} 
-                        />
-                        <${MenuItem} 
-                            icon=${html`<${Navigation} size=${20} />`} 
-                            label="Route Analysis" 
-                            subtitle="Compare road conditions"
-                            onClick=${() => { onSelectMode('routes'); toggleMenu(); }} 
-                        />
-                    </div>
-
                     <!-- Contribute Section -->
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mb-2">Contribute</p>
                     <div className="space-y-1 mb-4">
