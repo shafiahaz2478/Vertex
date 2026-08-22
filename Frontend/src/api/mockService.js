@@ -156,7 +156,18 @@ export const api = {
   async fetchPotholes(bbox) {
     try {
       const query = bbox ? `?${new URLSearchParams({ bbox })}` : '';
-      return await requestBackend(`/potholes${query}`);
+      const response = await requestBackend(`/potholes${query}`);
+      
+      // Inject has_image into the first few potholes for UI testing
+      if (response && response.features && response.features.length > 0) {
+          response.features.forEach((feat, i) => {
+              if (i < 2) {
+                  if (!feat.properties) feat.properties = {};
+                  feat.properties.has_image = true;
+              }
+          });
+      }
+      return response;
     } catch (error) {
       console.warn('Could not load backend potholes; using demo database records.', error);
       await delay(200);
